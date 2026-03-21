@@ -110,100 +110,273 @@ def _parse_run_id_as_iso(run_id: str) -> str:
 
 # -------------------- PARSE A LISTING --------------------
 def parse_listing(text: str) -> dict:
-    d = {}
+    import re
 
-    # price
-    m = PRICE_RE.search(text)
+    d = {}
+    raw = text or ""
+    text_l = raw.lower()
+
+    # ---------------- price ----------------
+    m = re.search(r"\$\s*([0-9,]+)", raw)
     if m:
         try:
             d["price"] = int(m.group(1).replace(",", ""))
         except ValueError:
             pass
 
-    # year
-    y = YEAR_RE.search(text)
-    if y:
+    # ---------------- year ----------------
+    year_val = None
+
+    # Prefer standalone year line in main details block
+    m = re.search(r"(?m)^\s*((?:19|20)\d{2})\s*$", raw)
+    if m:
         try:
-            d["year"] = int(y.group(0))
+            year_val = int(m.group(1))
+            d["year"] = year_val
         except ValueError:
             pass
 
-    # make and model - read directly from structured label in text
-    # looks for "2013\nford escape" or "ford escape" in listing
-    make_model = re.search(
-        r'^\s*(ford|toyota|honda|chevrolet|chevy|dodge|nissan|hyundai|'
-        r'kia|subaru|mazda|volkswagen|vw|bmw|mercedes|audi|jeep|ram|'
-        r'gmc|cadillac|buick|lincoln|volvo|lexus|acura|infiniti|'
-        r'mitsubishi|chrysler|pontiac|saturn|scion|tesla|volvo|'
-        r'buick|oldsmobile|mercury|hummer|suzuki|isuzu|saab|'
-        r'mini|porsche|jaguar|land|fiat|alfa|maserati|genesis|'
-        r'rivian|lucid|benz|acura)\s+(\w+)',
-        text, re.I | re.MULTILINE
-    )
-    if make_model:
-        d["make"] = make_model.group(1).title()
-        d["model"] = make_model.group(2).title()
+    # Fallback: labeled Year field
+    if year_val is None:
+        m = re.search(r"(?im)^\s*year\s*[:\-]?\s*((?:19|20)\d{2})\s*$", raw)
+        if m:
+            try:
+                year_val = int(m.group(1))
+                d["year"] = year_val
+            except ValueError:
+                pass
 
-    # mileage - looks for "odometer:\n140,000" pattern first
-    mi = None
-    m1 = re.search(r"(?:mileage|odometer)\s*[:\-]?\s*([\d,]+)", text, re.I)
-    if m1:
-        try: mi = int(m1.group(1).replace(",", ""))
-        except ValueError: mi = None
-    if mi is None:
-        m2 = re.search(r"(\d+(?:\.\d+)?)\s*k\s*(?:mi|mile|miles)\b", text, re.I)
+    # ---------------- make / model ----------------
+    KNOWN_MAKES = {
+        "acura","alfa","audi","bmw","buick","cadillac","chevrolet","chevy","chrysler",
+        "dodge","fiat","ford","gmc","genesis","honda","hyundai","infiniti","isuzu",
+        "jaguar","jeep","kia","land","lexus","lincoln","mazda","mercedes","mercury",
+        "mini","mitsubishi","nissan","pontiac","porsche","ram","rivian","saab","saturn",
+        "scion","subaru","suzuki","tesla","toyota","volkswagen","volvo","vw","benz",
+        "maserati","lucid","oldsmobile"
+    }
+
+    BAD_FIRST_WORDS = {
+        "contact","information","new","north","south","east","west","buy","here","print",
+        "posted","updated","reply","favorite","hide","flag","delivery","google","map",
+        "condition","fuel","drive","odometer","transmission","type","title","vin","stock",
+        "conversion","color","interior","engine","miles","price","brand","vehicle"
+    }
+
+    def clean_spaces(s: str) -> str:
+        return re.sub(r"\s+", " ", s or "").strip()
+
+    def normalize_make(make: str) -> str:
+        make = clean_spaces(make).lower()
+        mapping = {
+            "chevy": "Chevrolet",
+            "vw": "Volkswagen",
+            "benz": "Mercedes-Benz",
+            "land": "Land Rover",
+        }
+        return mapping.get(make, make.title())
+
+    def looks_like_boundary(line: str) -> bool:
+        x = clean_spaces(line).lower()
+        if not x:
+            return True
+        boundary_starts = (
+            "condition", "cylinders", "drive", "fuel", "odometer", "paint color",
+            "title status", "transmission", "type", "vin", "stock", "price", "miles",
+            "engine", "color", "interior color", "vehicle description", "post id",
+            "posted", "updated", "qr code", "more ads", "delivery available"
+        )
+        return any(x.startswith(b) for b in boundary_starts)
+
+    def try_labeled_make_model(text: str):
+        make = None
+        model = None
+
+        m1 = re.search(r"(?im)^\s*make\s*[:\-]?\s*([A-Za-z][A-Za-z&\-\s]+?)\s*$", text)
+        if m1:
+            make = clean_spaces(m1.group(1))
+
+        m2 = re.search(r"(?im)^\s*model\s*[:\-]?\s*([A-Za-z0-9][A-Za-z0-9&\-\.\s/]+?)\s*$", text)
         if m2:
-            try: mi = int(float(m2.group(1)) * 1000)
-            except ValueError: mi = None
+            model = clean_spaces(m2.group(1))
+
+        if make and model:
+            first = make.split()[0].lower()
+            if first not in BAD_FIRST_WORDS:
+                return normalize_make(make), model
+        return None
+
+    def try_year_followed_by_vehicle_line(text: str):
+        lines = text.splitlines()
+
+        for i, line in enumerate(lines[:-1]):
+            cur = clean_spaces(line)
+            if re.fullmatch(r"(19|20)\d{2}", cur):
+                nxt = clean_spaces(lines[i + 1])
+                nxt_l = nxt.lower()
+
+                if not nxt or looks_like_boundary(nxt):
+                    continue
+
+                parts = nxt.split()
+                if len(parts) < 2:
+                    continue
+
+                first = parts[0].lower()
+                if first in BAD_FIRST_WORDS:
+                    continue
+
+                # best case: first token is known make
+                if first in KNOWN_MAKES:
+                    make = normalize_make(parts[0])
+
+                    # take model until boundary-ish token if it appears
+                    model_tokens = []
+                    for tok in parts[1:]:
+                        tl = tok.lower()
+                        if tl in BAD_FIRST_WORDS:
+                            break
+                        model_tokens.append(tok)
+
+                    if model_tokens:
+                        return make, clean_spaces(" ".join(model_tokens))
+
+        return None
+
+    def try_title_line(text: str):
+        # first line often looks like:
+        # "2013 ford escape for sale - Derby, CT - craigslist"
+        first_line = clean_spaces(text.splitlines()[0] if text.splitlines() else "")
+        fl = first_line.lower()
+
+        m = re.match(
+            r"^\s*((?:19|20)\d{2})\s+([a-z]+)\s+(.+?)\s+for\s+sale\b",
+            fl,
+            re.I
+        )
+        if not m:
+            return None
+
+        make = m.group(2).strip()
+        model_blob = clean_spaces(m.group(3))
+
+        if make.lower() in BAD_FIRST_WORDS:
+            return None
+
+        # trim trailing location-ish noise if any
+        model_blob = re.split(r"\s+-\s+", model_blob)[0].strip()
+
+        return normalize_make(make), model_blob.title()
+
+    mm = (
+        try_labeled_make_model(raw)
+        or try_year_followed_by_vehicle_line(raw)
+        or try_title_line(raw)
+    )
+
+    if mm:
+        d["make"] = mm[0]
+        d["model"] = mm[1]
+
+    # ---------------- mileage ----------------
+    mi = None
+
+    m = re.search(r"(?is)(?:odometer|mileage)\s*:\s*([0-9,]+)", raw)
+    if m:
+        try:
+            mi = int(m.group(1).replace(",", ""))
+        except ValueError:
+            mi = None
+
     if mi is None:
-        m3 = re.search(r"(\d{1,3}(?:[,\d]{3})*)\s*(?:mi|mile|miles)\b", text, re.I)
-        if m3:
-            try: mi = int(re.sub(r"[^\d]", "", m3.group(1)))
-            except ValueError: mi = None
+        m = re.search(r"(?im)^\s*miles\s*[:\-]?\s*([0-9,]+)\s*$", raw)
+        if m:
+            try:
+                mi = int(m.group(1).replace(",", ""))
+            except ValueError:
+                mi = None
+
+    if mi is None:
+        m = re.search(r"\b([0-9]{1,3}(?:,[0-9]{3})+)\s*miles?\b", raw, re.I)
+        if m:
+            try:
+                mi = int(m.group(1).replace(",", ""))
+            except ValueError:
+                mi = None
+
     if mi is not None:
         d["mileage"] = mi
 
-    # fuel_type - looks for "fuel:\ngas" pattern
-    f = re.search(r'fuel\s*:\s*\n?\s*(gas|gasoline|diesel|electric|hybrid|phev|bev)', text, re.I)
-    if f:
-        d["fuel_type"] = f.group(1).lower()
+    # ---------------- fuel ----------------
+    m = re.search(r"(?is)fuel\s*:\s*(gas|gasoline|diesel|electric|hybrid|phev|bev)", raw)
+    if not m:
+        m = re.search(r"(?im)^\s*fuel\s+type\s*[:\-]?\s*(gas|gasoline|diesel|electric|hybrid|phev|bev)\s*$", raw)
+    if m:
+        fuel = m.group(1).lower()
+        fuel_map = {"gasoline": "gas"}
+        d["fuel_type"] = fuel_map.get(fuel, fuel)
 
-    # transmission - looks for "transmission:\nautomatic" pattern
-    t = re.search(r'transmission\s*:\s*\n?\s*(automatic|manual|cvt|auto)', text, re.I)
-    if t:
-        d["transmission"] = t.group(1).lower()
+    # ---------------- transmission ----------------
+    m = re.search(r"(?is)transmission\s*:\s*([A-Za-z0-9\-\s]+)", raw)
+    if m:
+        val = clean_spaces(m.group(1)).lower()
+        if "automatic" in val:
+            d["transmission"] = "automatic"
+        elif "manual" in val:
+            d["transmission"] = "manual"
+        elif "cvt" in val:
+            d["transmission"] = "cvt"
 
-    # color - looks for "paint color:\nblack" pattern first, then free text
-    c = re.search(r'paint\s*color\s*:\s*\n?\s*(\w+)', text, re.I)
-    if c:
-        d["color"] = c.group(1).lower()
+    # ---------------- color ----------------
+    m = re.search(r"(?is)paint\s*color\s*:\s*([A-Za-z]+)", raw)
+    if not m:
+        m = re.search(r"(?im)^\s*color\s*[:\-]?\s*([A-Za-z]+)\s*$", raw)
+    if m:
+        d["color"] = m.group(1).lower()
+
+    # ---------------- cylinders ----------------
+    m = re.search(r"(?is)cylinders\s*:\s*([0-9]+)\s*cylinders?", raw)
+    if not m:
+        m = re.search(r"\b([0-9]+)\s*cylinders?\b", raw, re.I)
+    if m:
+        try:
+            d["cylinders"] = int(m.group(1))
+        except ValueError:
+            pass
+
+    # ---------------- drive type ----------------
+    m = re.search(r"(?is)drive\s*:\s*(4wd|awd|fwd|rwd)", raw)
+    if m:
+        d["drive_type"] = m.group(1).lower()
+
+    # ---------------- condition ----------------
+    m = re.search(r"(?is)condition\s*:\s*(new|like new|excellent|good|fair|salvage)", raw)
+    if m:
+        d["condition"] = m.group(1).lower()
+
+    # ---------------- num_doors ----------------
+    # First try explicit "4 door" / "4dr"
+    m = re.search(r"\b([2-6])\s*(?:door|dr)\b", raw, re.I)
+    if m:
+        try:
+            d["num_doors"] = int(m.group(1))
+        except ValueError:
+            pass
     else:
-        c2 = COLOR_RE.search(text)
-        if c2:
-            d["color"] = c2.group(1).lower()
+        # common body-type defaults when explicit door count missing
+        vehicle_type = None
+        m_type = re.search(r"(?is)type\s*:\s*([A-Za-z]+)", raw)
+        if m_type:
+            vehicle_type = m_type.group(1).lower()
 
-    # num_doors - looks for "4 door" or "2-door" in text
-    dr = DOOR_RE.search(text)
-    if dr:
-        d["num_doors"] = int(dr.group(1))
+        model_text = (d.get("model") or "").lower()
 
-    # cylinders - looks for "4 cylinders" pattern
-    cyl = re.search(r'(\d)\s*cylinders?', text, re.I)
-    if cyl:
-        d["cylinders"] = int(cyl.group(1))
-
-    # drive type - looks for "drive:\n4wd" pattern
-    drv = re.search(r'drive\s*:\s*\n?\s*(4wd|fwd|rwd|awd)', text, re.I)
-    if drv:
-        d["drive_type"] = drv.group(1).lower()
-
-    # condition
-    cond = re.search(r'condition\s*:\s*\n?\s*(excellent|good|fair|like new|new|salvage)', text, re.I)
-    if cond:
-        d["condition"] = cond.group(1).lower()
+        if "coupe" in model_text:
+            d["num_doors"] = 2
+        elif vehicle_type in {"sedan", "suv", "wagon", "hatchback", "minivan"}:
+            d["num_doors"] = 4
 
     return d
-
 # -------------------- HTTP ENTRY --------------------
 def extract_http(request: Request):
     """
