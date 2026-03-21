@@ -128,20 +128,3 @@ def materialize_http(request: Request):
         }), 200
     except Exception as e:
         return jsonify({"ok": False, "error": f"{type(e).__name__}: {e}"}), 500
-```
-
----
-
-## What changed from v2 to v3:
-
-| | v2 (original) | v3 (new) |
-|---|---|---|
-| CSV columns | 9 columns | 15 columns |
-| Output file | `listings_master.csv` | `listings_master_v3.csv` |
-| New fields | none | fuel_type, transmission, color, num_doors, cylinders, drive_type, condition |
-
----
-
-**Create the file at:**
-```
-cloud_function/materialize-master-v3/main.py
