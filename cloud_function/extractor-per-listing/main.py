@@ -36,9 +36,10 @@ READ_RETRY = gax_retry.Retry(
 storage_client = storage.Client()
 
 # -------------------- SIMPLE REGEX EXTRACTORS --------------------
-PRICE_RE      = re.compile(r"\$\s?([0-9,]+)")
-YEAR_RE       = re.compile(r"\b(19|20)\d{2}\b")
-MAKE_MODEL_RE = re.compile(r"\b([A-Z][a-z]+)\s+([A-Z][A-Za-z0-9]+)")
+PRICE_RE = re.compile(r"\$\s?([0-9,]+)")
+YEAR_RE  = re.compile(r"\b(19|20)\d{2}\b")
+DOOR_RE  = re.compile(r'\b([2-9])\s*-?\s*door\b', re.I)
+COLOR_RE = re.compile(r'\b(red|blue|black|white|silver|gray|grey|green|yellow|orange|brown|gold|purple|beige|maroon|navy|pearl|charcoal)\b', re.I)
 
 # -------------------- HELPERS --------------------
 def _list_run_ids(bucket: str, scrapes_prefix: str) -> list[str]:
@@ -111,6 +112,7 @@ def _parse_run_id_as_iso(run_id: str) -> str:
 def parse_listing(text: str) -> dict:
     d = {}
 
+    # price
     m = PRICE_RE.search(text)
     if m:
         try:
@@ -118,6 +120,7 @@ def parse_listing(text: str) -> dict:
         except ValueError:
             pass
 
+    # year
     y = YEAR_RE.search(text)
     if y:
         try:
@@ -125,12 +128,23 @@ def parse_listing(text: str) -> dict:
         except ValueError:
             pass
 
-    mm = MAKE_MODEL_RE.search(text)
-    if mm:
-        d["make"] = mm.group(1)
-        d["model"] = mm.group(2)
+    # make and model - read directly from structured label in text
+    # looks for "2013\nford escape" or "ford escape" in listing
+    make_model = re.search(
+        r'^\s*(ford|toyota|honda|chevrolet|chevy|dodge|nissan|hyundai|'
+        r'kia|subaru|mazda|volkswagen|vw|bmw|mercedes|audi|jeep|ram|'
+        r'gmc|cadillac|buick|lincoln|volvo|lexus|acura|infiniti|'
+        r'mitsubishi|chrysler|pontiac|saturn|scion|tesla|volvo|'
+        r'buick|oldsmobile|mercury|hummer|suzuki|isuzu|saab|'
+        r'mini|porsche|jaguar|land|fiat|alfa|maserati|genesis|'
+        r'rivian|lucid|benz|acura)\s+(\w+)',
+        text, re.I | re.MULTILINE
+    )
+    if make_model:
+        d["make"] = make_model.group(1).title()
+        d["model"] = make_model.group(2).title()
 
-    # mileage variants
+    # mileage - looks for "odometer:\n140,000" pattern first
     mi = None
     m1 = re.search(r"(?:mileage|odometer)\s*[:\-]?\s*([\d,]+)", text, re.I)
     if m1:
@@ -148,6 +162,45 @@ def parse_listing(text: str) -> dict:
             except ValueError: mi = None
     if mi is not None:
         d["mileage"] = mi
+
+    # fuel_type - looks for "fuel:\ngas" pattern
+    f = re.search(r'fuel\s*:\s*\n?\s*(gas|gasoline|diesel|electric|hybrid|phev|bev)', text, re.I)
+    if f:
+        d["fuel_type"] = f.group(1).lower()
+
+    # transmission - looks for "transmission:\nautomatic" pattern
+    t = re.search(r'transmission\s*:\s*\n?\s*(automatic|manual|cvt|auto)', text, re.I)
+    if t:
+        d["transmission"] = t.group(1).lower()
+
+    # color - looks for "paint color:\nblack" pattern first, then free text
+    c = re.search(r'paint\s*color\s*:\s*\n?\s*(\w+)', text, re.I)
+    if c:
+        d["color"] = c.group(1).lower()
+    else:
+        c2 = COLOR_RE.search(text)
+        if c2:
+            d["color"] = c2.group(1).lower()
+
+    # num_doors - looks for "4 door" or "2-door" in text
+    dr = DOOR_RE.search(text)
+    if dr:
+        d["num_doors"] = int(dr.group(1))
+
+    # cylinders - looks for "4 cylinders" pattern
+    cyl = re.search(r'(\d)\s*cylinders?', text, re.I)
+    if cyl:
+        d["cylinders"] = int(cyl.group(1))
+
+    # drive type - looks for "drive:\n4wd" pattern
+    drv = re.search(r'drive\s*:\s*\n?\s*(4wd|fwd|rwd|awd)', text, re.I)
+    if drv:
+        d["drive_type"] = drv.group(1).lower()
+
+    # condition
+    cond = re.search(r'condition\s*:\s*\n?\s*(excellent|good|fair|like new|new|salvage)', text, re.I)
+    if cond:
+        d["condition"] = cond.group(1).lower()
 
     return d
 
