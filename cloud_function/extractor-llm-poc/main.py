@@ -198,26 +198,26 @@ def _vertex_extract_fields(raw_text: str) -> dict:
 
     # System instruction (will be prepended to the prompt)
     sys_instr = (
-    "Extract ONLY the following fields from the input text. "
-    "Return a strict JSON object that conforms to the provided schema. "
-    "If a value is not present, use null. "
+        "Extract ONLY the following fields from the input text. "
+        "Return a strict JSON object that conforms to the provided schema. "
+        "If a value is not present, use null. "
     
-    "Rules: "
-    "price, year, mileage, mpg_city, mpg_highway must be integers; "
-    "price in USD; mileage in miles. "
+        "Rules: "
+        "price, year, mileage, mpg_city, mpg_highway must be integers; "
+        "price in USD; mileage in miles. "
+        
+        "transmission can be manual or automatic, or null if not listed. "
+        "fuel, body_type, color, title_status, condition, drivetrain should be extracted as text if present, otherwise null. "
     
-    "transmission can be manual or automatic, or null if not listed. "
-    "fuel, body_type, color, title_status, condition, drivetrain should be extracted as text if present, otherwise null. "
+        "vin, stock_number, engine, series, dealer_name, phone, website should be extracted exactly as shown in the text. "
     
-    "vin, stock_number, engine, series, dealer_name, phone, website should be extracted exactly as shown in the text. "
+        "location_city, location_state, location_zip should be extracted separately if available. "
+        "full_address should include the complete address if present. "
     
-    "location_city, location_state, location_zip should be extracted separately if available. "
-    "full_address should include the complete address if present. "
+        "posted_date and post_id should be extracted as shown. "
     
-    "posted_date and post_id should be extracted as shown. "
-    
-    "Do not infer values not explicitly present; do not add extra keys."
-)
+        "Do not infer values not explicitly present; do not add extra keys."
+    )
 
     # FIX: Combine instruction and text into one prompt string (SDK compatibility)
     prompt = f"{sys_instr}\n\nTEXT:\n{raw_text}"
