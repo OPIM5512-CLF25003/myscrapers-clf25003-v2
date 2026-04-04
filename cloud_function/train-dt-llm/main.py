@@ -399,8 +399,40 @@ def run_once(dry_run: bool = False):
     if len(X_holdout) > 0:
         y_hat = best_pipe.predict(X_holdout)
 
-        # Keep ALL today's rows with all columns
-        preds_df = holdout_df.copy()
+        keep_cols = [c for c in [
+            "run_id",
+            "post_id",
+            "scraped_at",
+            "source",
+            "make",
+            "model",
+            "series",
+            "year",
+            "price",
+            "mileage",
+            "transmission",
+            "fuel",
+            "body_type",
+            "color",
+            "title_status",
+            "condition",
+            "drivetrain",
+            "engine",
+            "mpg_city",
+            "mpg_highway",
+            "location_city",
+            "location_state",
+            "location_zip",
+            "dealer_name",
+            "posted_date",
+            "vin",
+            "stock_number",
+            "phone",
+            "website",
+            "full_address"
+        ] if c in holdout_df.columns]
+
+        preds_df = holdout_df[keep_cols].copy()
         preds_df["actual_price"] = y_holdout.values
         preds_df["pred_price"] = np.round(y_hat, 2)
 
