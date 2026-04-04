@@ -16,7 +16,7 @@ env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   REGION: ${{ vars.REGION }}
   FUNCTION_NAME: train-llm-dt
-  FUNCTION_DIR: cloud_function/train-llm-dt
+  FUNCTION_DIR: cloud_function/train-dt-llm
   ENTRY_POINT: train_rf_tuned_http
   RUNTIME: python312
   BUCKET_NAME: ${{ vars.BUCKET_NAME }}
