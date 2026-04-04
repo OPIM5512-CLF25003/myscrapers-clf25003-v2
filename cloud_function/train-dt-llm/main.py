@@ -27,7 +27,7 @@ from sklearn.ensemble import RandomForestRegressor
 PROJECT_ID = os.getenv("PROJECT_ID", "")
 GCS_BUCKET = os.getenv("GCS_BUCKET", "")
 DATA_KEY = os.getenv("DATA_KEY", "structured/datasets/listings_master_llm.csv")
-OUTPUT_PREFIX = os.getenv("OUTPUT_PREFIX", "preds-llm")
+OUTPUT_PREFIX = os.getenv("OUTPUT_PREFIX", "structured/preds-llm")
 TIMEZONE = os.getenv("TIMEZONE", "America/New_York")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
@@ -361,7 +361,6 @@ def run_once(dry_run: bool = False):
         ("model", base_model)
     ])
 
-    # Smaller grid for cloud/runtime safety
     param_grid = {
         "model__n_estimators": [200, 300],
         "model__max_depth": [10, None],
@@ -395,15 +394,20 @@ def run_once(dry_run: bool = False):
     mae_today = None
     preds_df = pd.DataFrame()
 
+    logging.info("Holdout rows available for prediction: %d", len(X_holdout))
+
     if len(X_holdout) > 0:
         y_hat = best_pipe.predict(X_holdout)
 
-        keep_cols = [c for c in ["post_id", "scraped_at", "make", "model", "price"] if c in holdout_df.columns]
-        preds_df = holdout_df[keep_cols].copy()
+        # Keep ALL today's rows with all columns
+        preds_df = holdout_df.copy()
         preds_df["actual_price"] = y_holdout.values
         preds_df["pred_price"] = np.round(y_hat, 2)
 
         mae_today = float(mean_absolute_error(y_holdout, y_hat))
+        logging.info("Prediction rows written to preds_df: %d", len(preds_df))
+    else:
+        logging.warning("Holdout set is empty; preds-llm.csv will not be created.")
 
     # -----------------------------
     # Permutation importance
