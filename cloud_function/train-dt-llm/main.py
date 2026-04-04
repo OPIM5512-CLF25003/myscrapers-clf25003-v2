@@ -27,7 +27,7 @@ from sklearn.ensemble import RandomForestRegressor
 PROJECT_ID = os.getenv("PROJECT_ID", "")
 GCS_BUCKET = os.getenv("GCS_BUCKET", "")
 DATA_KEY = os.getenv("DATA_KEY", "structured/datasets/listings_master_llm.csv")
-OUTPUT_PREFIX = os.getenv("OUTPUT_PREFIX", "preds")
+OUTPUT_PREFIX = os.getenv("OUTPUT_PREFIX", "preds-llm")
 TIMEZONE = os.getenv("TIMEZONE", "America/New_York")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
