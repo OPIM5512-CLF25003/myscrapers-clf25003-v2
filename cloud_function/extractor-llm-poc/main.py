@@ -156,33 +156,103 @@ def _safe_int(x):
 # -------------------- VERTEX AI CALL --------------------
 def _vertex_extract_fields(raw_text: str) -> dict:
     """
-    Ask Gemini to return JSON with exactly: price, year, make, model, transmission, mileage.
+    Ask Gemini to return JSON with exactly: price, year, make, model, series, mileage, vin, stock_number, fuel, transmission, body_type, color, title_status, condition, drivetrain, engine, mpg_city, mpg_highway, location_city, location_state, location_zip, full_address, dealer_name, phone, website, posted_date, post_id.
     """
     model = _get_vertex_model()
 
     # Strict JSON schema - FIX: Removed "additionalProperties": False
     schema = {
         "type": "object",
-        "properties": {
-            "price": {"type": "integer", "nullable": True},
-            "year": {"type": "integer", "nullable": True},
-            "make": {"type": "string", "nullable": True},
-            "model": {"type": "string", "nullable": True},
-            "transmission": {"type": "string", "nullable": True},
-            "mileage": {"type": "integer", "nullable": True},
-        },
-        "required": ["price", "year", "make", "model", "transmission", "mileage"]
-    }
+    "properties": {
+        "price":            {"type": "integer", "nullable": True},
+        "year":             {"type": "integer", "nullable": True},
+        "make":             {"type": "string",  "nullable": True},
+        "model":            {"type": "string",  "nullable": True},
+        "series":           {"type": "string",  "nullable": True},
+        "trim":             {"type": "string",  "nullable": True},
+        "mileage":          {"type": "integer", "nullable": True},
+
+        "vin":              {"type": "string",  "nullable": True},
+        "stock_number":     {"type": "string",  "nullable": True},
+
+        "transmission":     {"type": "string",  "nullable": True},
+        "body_type":        {"type": "string",  "nullable": True},
+        "fuel":             {"type": "string",  "nullable": True},
+        "color":            {"type": "string",  "nullable": True},
+        "title_status":     {"type": "string",  "nullable": True},
+        "condition":        {"type": "string",  "nullable": True},
+
+        "drivetrain":       {"type": "string",  "nullable": True},
+        "engine":           {"type": "string",  "nullable": True},
+        "mpg_city":         {"type": "integer", "nullable": True},
+        "mpg_highway":      {"type": "integer", "nullable": True},
+
+        "location_city":    {"type": "string",  "nullable": True},
+        "location_state":   {"type": "string",  "nullable": True},
+        "location_zip":     {"type": "string",  "nullable": True},
+        "full_address":     {"type": "string",  "nullable": True},
+
+        "dealer_name":      {"type": "string",  "nullable": True},
+        "phone":            {"type": "string",  "nullable": True},
+        "website":          {"type": "string",  "nullable": True},
+
+        "posted_date":      {"type": "string",  "nullable": True},
+        "post_id":          {"type": "string",  "nullable": True}
+    },
+    "required": [
+        "price",
+        "year",
+        "make",
+        "model",
+        "mileage",
+        "series",
+        "trim",
+        "vin",
+        "stock_number",
+        "transmission",
+        "body_type",
+        "fuel",
+        "color",
+        "title_status",
+        "condition",
+        "drivetrain",
+        "engine",
+        "mpg_city",
+        "mpg_highway",
+        "location_city",
+        "location_state",
+        "location_zip",
+        "full_address",
+        "dealer_name",
+        "phone",
+        "website",
+        "posted_date",
+        "post_id"
+    ]
+}
 
     # System instruction (will be prepended to the prompt)
     sys_instr = (
-        "Extract ONLY the following fields from the input text. "
-        "Return a strict JSON object that conforms to the provided schema. "
-        "If a value is not present, use null. "
-        "Rules: integers for price/year/mileage; price in USD; mileage in miles; "
-        "the transmission can be manual or automatic, or if not listed, write null."
-        "do not infer values not explicitly present; do not add extra keys."
-    )
+    "Extract ONLY the following fields from the input text. "
+    "Return a strict JSON object that conforms to the provided schema. "
+    "If a value is not present, use null. "
+    
+    "Rules: "
+    "price, year, mileage, mpg_city, mpg_highway must be integers; "
+    "price in USD; mileage in miles. "
+    
+    "transmission can be manual or automatic, or null if not listed. "
+    "fuel, body_type, color, title_status, condition, drivetrain should be extracted as text if present, otherwise null. "
+    
+    "vin, stock_number, engine, series, dealer_name, phone, website should be extracted exactly as shown in the text. "
+    
+    "location_city, location_state, location_zip should be extracted separately if available. "
+    "full_address should include the complete address if present. "
+    
+    "posted_date and post_id should be extracted as shown. "
+    
+    "Do not infer values not explicitly present; do not add extra keys."
+)
 
     # FIX: Combine instruction and text into one prompt string (SDK compatibility)
     prompt = f"{sys_instr}\n\nTEXT:\n{raw_text}"
@@ -310,21 +380,41 @@ def llm_extract_http(request: Request):
             parsed = _vertex_extract_fields(raw_listing)
 
             # Compose final record
-            out_record = {
-                "post_id": post_id,
-                "run_id": base_rec.get("run_id", run_id),
-                "scraped_at": base_rec.get("scraped_at", structured_iso),
-                "source_txt": source_txt_key,
-                "price": parsed.get("price"),
-                "year": parsed.get("year"),
-                "make": parsed.get("make"),
-                "model": parsed.get("model"),
-                "mileage": parsed.get("mileage"),
-                "transmission": parsed.get("transmission"),
-                "llm_provider": "vertex",
-                "llm_model": LLM_MODEL,
-                "llm_ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-            }
+out_record = {
+    "post_id": post_id,
+    "run_id": base_rec.get("run_id", run_id),
+    "scraped_at": base_rec.get("scraped_at", structured_iso),
+    "source_txt": source_txt_key,
+    "price": parsed.get("price"),
+    "year": parsed.get("year"),
+    "make": parsed.get("make"),
+    "model": parsed.get("model"),
+    "series": parsed.get("series"),
+    "mileage": parsed.get("mileage"),
+    "transmission": parsed.get("transmission"),
+    "fuel": parsed.get("fuel"),
+    "body_type": parsed.get("body_type"),
+    "color": parsed.get("color"),
+    "title_status": parsed.get("title_status"),
+    "condition": parsed.get("condition"),
+    "vin": parsed.get("vin"),
+    "stock_number": parsed.get("stock_number"),
+    "drivetrain": parsed.get("drivetrain"),
+    "engine": parsed.get("engine"),
+    "mpg_city": parsed.get("mpg_city"),
+    "mpg_highway": parsed.get("mpg_highway"),
+    "location_city": parsed.get("location_city"),
+    "location_state": parsed.get("location_state"),
+    "location_zip": parsed.get("location_zip"),
+    "full_address": parsed.get("full_address"),
+    "dealer_name": parsed.get("dealer_name"),
+    "phone": parsed.get("phone"),
+    "website": parsed.get("website"),
+    "posted_date": parsed.get("posted_date"),
+    "llm_provider": "vertex",
+    "llm_model": LLM_MODEL,
+    "llm_ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+}
 
             _upload_jsonl_line(out_key, out_record)
             written += 1
