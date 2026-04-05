@@ -71,11 +71,6 @@ def _clean_numeric(s: pd.Series) -> pd.Series:
     return pd.to_numeric(s, errors="coerce")
 
 
-def _extract_engine_liters(s: pd.Series) -> pd.Series:
-    vals = s.astype(str).str.extract(r"(\d{1,2}\.\d)")
-    return pd.to_numeric(vals[0], errors="coerce")
-
-
 def _normalize_text_col(s: pd.Series) -> pd.Series:
     return (
         s.astype(str)
@@ -85,19 +80,49 @@ def _normalize_text_col(s: pd.Series) -> pd.Series:
     )
 
 
-def _reduce_rare_categories(df: pd.DataFrame, cols, min_count=10):
-    df = df.copy()
-    for c in cols:
-        if c not in df.columns:
-            continue
-        vc = df[c].value_counts(dropna=True)
-        keep = set(vc[vc >= min_count].index)
-        df[c] = df[c].where(df[c].isin(keep), "OTHER")
-    return df
+def _standardize_make(s: pd.Series) -> pd.Series:
+    s = _normalize_text_col(s)
+    replacements = {
+        "chevy": "chevrolet",
+        "vw": "volkswagen",
+        "mercedes benz": "mercedes-benz",
+        "mercedez-benz": "mercedes-benz",
+        "mercedes": "mercedes-benz",
+        "infinity": "infiniti",
+        "foord": "ford",
+        "hyandia": "hyundai",
+        "hyundia": "hyundai",
+    }
+    return s.replace(replacements)
 
 
-def _apply_allowed_categories(series: pd.Series, allowed_values: set) -> pd.Series:
-    return series.where(series.isin(allowed_values), "OTHER")
+def _extract_engine_liters(s: pd.Series) -> pd.Series:
+    s = s.astype(str).str.lower()
+    liters = s.str.extract(r"(\d{1,2}\.\d)\s*[l]?")
+    return pd.to_numeric(liters[0], errors="coerce")
+
+
+def _extract_engine_cylinders(s: pd.Series) -> pd.Series:
+    s = s.astype(str).str.lower()
+
+    cyl = s.str.extract(r"(\d+)\s*(?:cyl|cylinder|cylinders)")
+    cyl_num = pd.to_numeric(cyl[0], errors="coerce")
+
+    v_match = s.str.extract(r"\bv(\d)\b")
+    v_num = pd.to_numeric(v_match[0], errors="coerce")
+
+    i_match = s.str.extract(r"\bi(\d)\b")
+    i_num = pd.to_numeric(i_match[0], errors="coerce")
+
+    h_match = s.str.extract(r"\bh(\d)\b")
+    h_num = pd.to_numeric(h_match[0], errors="coerce")
+
+    return cyl_num.fillna(v_num).fillna(i_num).fillna(h_num)
+
+
+def _first_token_clean(s: pd.Series) -> pd.Series:
+    s = _normalize_text_col(s)
+    return s.str.extract(r"([a-z0-9\-]+)")[0]
 
 
 def _cap_series(train_s: pd.Series, apply_s: pd.Series, low_q=0.01, high_q=0.99):
@@ -109,10 +134,15 @@ def _cap_series(train_s: pd.Series, apply_s: pd.Series, low_q=0.01, high_q=0.99)
     return apply_s.clip(lower=lo, upper=hi), float(lo), float(hi)
 
 
+# =========================================================
+# FEATURE ENGINEERING
+# =========================================================
 def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     df = df.copy()
 
+    # -----------------------------
     # Datetime parsing
+    # -----------------------------
     df["scraped_at_dt_utc"] = pd.to_datetime(df["scraped_at"], errors="coerce", utc=True)
     try:
         df["scraped_at_local"] = df["scraped_at_dt_utc"].dt.tz_convert(timezone)
@@ -120,37 +150,50 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
         df["scraped_at_local"] = df["scraped_at_dt_utc"]
 
     df["date_local"] = df["scraped_at_local"].dt.date
-    df["scrape_hour"] = df["scraped_at_local"].dt.hour
-    df["scrape_dow"] = df["scraped_at_local"].dt.dayofweek
-    df["scrape_month"] = df["scraped_at_local"].dt.month
 
     if "posted_date" in df.columns:
         df["posted_date_dt"] = pd.to_datetime(df["posted_date"], errors="coerce")
-        df["posted_month"] = df["posted_date_dt"].dt.month
-        df["posted_dow"] = df["posted_date_dt"].dt.dayofweek
+        scraped_naive = df["scraped_at_local"].dt.tz_localize(None, ambiguous="NaT", nonexistent="NaT")
+        df["days_since_posted"] = (scraped_naive - df["posted_date_dt"]).dt.days
+        df["days_since_posted"] = df["days_since_posted"].where(df["days_since_posted"] >= 0, np.nan)
         posted_year = df["posted_date_dt"].dt.year
     else:
         df["posted_date_dt"] = pd.NaT
-        df["posted_month"] = np.nan
-        df["posted_dow"] = np.nan
+        df["days_since_posted"] = np.nan
         posted_year = np.nan
 
+    # -----------------------------
     # Numeric cleaning
-    for c in ["price", "year", "mileage", "mpg_city", "mpg_highway", "location_zip"]:
+    # -----------------------------
+    for c in ["price", "year", "mileage"]:
         if c in df.columns:
             df[f"{c}_num"] = _clean_numeric(df[c])
 
+    # -----------------------------
     # Text normalization
-    text_cols = [
-        "make", "model", "series", "transmission", "fuel", "body_type", "color",
-        "title_status", "condition", "drivetrain", "engine", "location_city",
-        "location_state", "dealer_name"
-    ]
-    for c in text_cols:
+    # -----------------------------
+    if "make" in df.columns:
+        df["make"] = _standardize_make(df["make"])
+
+    for c in ["model", "transmission", "fuel", "condition", "body_type", "engine", "location_state"]:
         if c in df.columns:
             df[c] = _normalize_text_col(df[c])
 
-    # Engineered features
+    # -----------------------------
+    # Engineered categorical / numeric features
+    # -----------------------------
+    if "model" in df.columns:
+        df["model_base"] = _first_token_clean(df["model"])
+    else:
+        df["model_base"] = np.nan
+
+    if "engine" in df.columns:
+        df["engine_liters"] = _extract_engine_liters(df["engine"])
+        df["engine_cylinders"] = _extract_engine_cylinders(df["engine"])
+    else:
+        df["engine_liters"] = np.nan
+        df["engine_cylinders"] = np.nan
+
     current_year = pd.Timestamp.now(tz=timezone).year if timezone else pd.Timestamp.now().year
 
     if "year_num" in df.columns:
@@ -170,32 +213,6 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
         df["mileage_per_year"] = df["mileage_num"] / df["vehicle_age"].replace(0, np.nan)
     else:
         df["mileage_per_year"] = np.nan
-
-    if "mpg_city_num" in df.columns or "mpg_highway_num" in df.columns:
-        mpg_cols = [c for c in ["mpg_city_num", "mpg_highway_num"] if c in df.columns]
-        df["mpg_avg"] = df[mpg_cols].mean(axis=1)
-    else:
-        df["mpg_avg"] = np.nan
-
-    if "engine" in df.columns:
-        df["engine_liters"] = _extract_engine_liters(df["engine"])
-    else:
-        df["engine_liters"] = np.nan
-
-    if "transmission" in df.columns:
-        df["is_automatic"] = df["transmission"].fillna("").str.contains("auto").astype(int)
-    else:
-        df["is_automatic"] = 0
-
-    if "title_status" in df.columns:
-        df["is_clean_title"] = df["title_status"].fillna("").str.contains("clean").astype(int)
-    else:
-        df["is_clean_title"] = 0
-
-    if "dealer_name" in df.columns:
-        df["has_dealer"] = df["dealer_name"].notna().astype(int)
-    else:
-        df["has_dealer"] = 0
 
     return df
 
@@ -252,11 +269,18 @@ def run_once(dry_run: bool = False):
     # -----------------------------
     # Outlier handling
     # -----------------------------
-    # Cap target only on train; do NOT change holdout target
-    train_df["price_num"], price_lo, price_hi = _cap_series(train_df["price_num"], train_df["price_num"], 0.01, 0.99)
+    train_df["price_num"], price_lo, price_hi = _cap_series(
+        train_df["price_num"], train_df["price_num"], 0.01, 0.99
+    )
 
-    # Cap feature outliers using train thresholds, then apply to both train and holdout
-    feature_outlier_cols = ["mileage_num", "vehicle_age", "mileage_per_year", "mpg_avg", "engine_liters"]
+    feature_outlier_cols = [
+        "mileage_num",
+        "vehicle_age",
+        "mileage_per_year",
+        "engine_liters",
+        "engine_cylinders",
+        "days_since_posted",
+    ]
     outlier_caps = {}
 
     for c in feature_outlier_cols:
@@ -266,55 +290,29 @@ def run_once(dry_run: bool = False):
             if c in holdout_df.columns and not np.isnan(lo) and not np.isnan(hi):
                 holdout_df[c] = holdout_df[c].clip(lo, hi)
 
-    # -----------------------------
-    # Rare category handling
-    # -----------------------------
-    rare_cols = ["model", "series", "engine", "dealer_name", "location_city", "color"]
-    train_df = _reduce_rare_categories(train_df, rare_cols, min_count=8)
-
-    for c in rare_cols:
-        if c in train_df.columns and c in holdout_df.columns:
-            allowed = set(train_df[c].dropna().unique())
-            holdout_df[c] = _apply_allowed_categories(holdout_df[c], allowed)
-
     target = "price_num"
 
+    # -----------------------------
+    # HIGH IMPACT FEATURES ONLY
+    # -----------------------------
     numeric_features = [
         "year_num",
         "mileage_num",
-        "mpg_city_num",
-        "mpg_highway_num",
-        "location_zip_num",
         "vehicle_age",
-        "car_age_at_listing",
         "mileage_per_year",
-        "mpg_avg",
         "engine_liters",
-        "is_automatic",
-        "is_clean_title",
-        "has_dealer",
-        "scrape_hour",
-        "scrape_dow",
-        "scrape_month",
-        "posted_month",
-        "posted_dow",
+        "engine_cylinders",
+        "days_since_posted",
     ]
 
     categorical_features = [
         "make",
-        "model",
-        "series",
+        "model_base",
         "transmission",
         "fuel",
-        "body_type",
-        "color",
-        "title_status",
         "condition",
-        "drivetrain",
-        "engine",
-        "location_city",
+        "body_type",
         "location_state",
-        "dealer_name",
     ]
 
     numeric_features = [c for c in numeric_features if c in train_df.columns]
@@ -399,40 +397,26 @@ def run_once(dry_run: bool = False):
     if len(X_holdout) > 0:
         y_hat = best_pipe.predict(X_holdout)
 
-        keep_cols = [c for c in [
-            "run_id",
-            "post_id",
-            "scraped_at",
-            "source",
+        # Hardcoded output = only final model columns
+        output_cols = [
+            "year_num",
+            "mileage_num",
+            "vehicle_age",
+            "mileage_per_year",
+            "engine_liters",
+            "engine_cylinders",
+            "days_since_posted",
             "make",
-            "model",
-            "series",
-            "year",
-            "price",
-            "mileage",
+            "model_base",
             "transmission",
             "fuel",
-            "body_type",
-            "color",
-            "title_status",
             "condition",
-            "drivetrain",
-            "engine",
-            "mpg_city",
-            "mpg_highway",
-            "location_city",
+            "body_type",
             "location_state",
-            "location_zip",
-            "dealer_name",
-            "posted_date",
-            "vin",
-            "stock_number",
-            "phone",
-            "website",
-            "full_address"
-        ] if c in holdout_df.columns]
+        ]
+        output_cols = [c for c in output_cols if c in holdout_df.columns]
 
-        preds_df = holdout_df[keep_cols].copy()
+        preds_df = holdout_df[output_cols].copy()
         preds_df["actual_price"] = y_holdout.values
         preds_df["pred_price"] = np.round(y_hat, 2)
 
