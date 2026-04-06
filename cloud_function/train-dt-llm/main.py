@@ -89,40 +89,47 @@ def _standardize_make(s: pd.Series) -> pd.Series:
         "mercedez-benz": "mercedes-benz",
         "mercedes": "mercedes-benz",
         "infinity": "infiniti",
-        "foord": "ford",
         "hyandia": "hyundai",
         "hyundia": "hyundai",
     }
     return s.replace(replacements)
 
 
+def _first_token_clean(s: pd.Series) -> pd.Series:
+    s = _normalize_text_col(s)
+    return s.str.extract(r"([a-z0-9]+(?:-[a-z0-9]+)?)")[0]
+
+
 def _extract_engine_liters(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.lower()
-    liters = s.str.extract(r"(\d{1,2}\.\d)\s*[l]?")
-    return pd.to_numeric(liters[0], errors="coerce")
+
+    # examples handled:
+    # 2.5l, 3.6l, 2.0 liter, 4.7, 1.8 turbo
+    liters = s.str.extract(r"(\d+(?:\.\d+)?)\s*(?:l|liter|litre)?")[0]
+    vals = pd.to_numeric(liters, errors="coerce")
+
+    # realistic engine sizes only
+    vals = vals.where((vals >= 0.6) & (vals <= 8.5), np.nan)
+    return vals
 
 
 def _extract_engine_cylinders(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.lower()
 
-    cyl = s.str.extract(r"(\d+)\s*(?:cyl|cylinder|cylinders)")
-    cyl_num = pd.to_numeric(cyl[0], errors="coerce")
+    # examples handled:
+    # 6 cylinders, 4-cylinder, v6, v-8, i4, h4
+    cyl_1 = s.str.extract(r"(\d+)\s*[- ]?(?:cyl|cylinder|cylinders)")[0]
+    cyl_2 = s.str.extract(r"\bv[- ]?(\d+)\b")[0]
+    cyl_3 = s.str.extract(r"\bi[- ]?(\d+)\b")[0]
+    cyl_4 = s.str.extract(r"\bh[- ]?(\d+)\b")[0]
 
-    v_match = s.str.extract(r"\bv(\d)\b")
-    v_num = pd.to_numeric(v_match[0], errors="coerce")
+    vals = pd.to_numeric(cyl_1, errors="coerce")
+    vals = vals.fillna(pd.to_numeric(cyl_2, errors="coerce"))
+    vals = vals.fillna(pd.to_numeric(cyl_3, errors="coerce"))
+    vals = vals.fillna(pd.to_numeric(cyl_4, errors="coerce"))
 
-    i_match = s.str.extract(r"\bi(\d)\b")
-    i_num = pd.to_numeric(i_match[0], errors="coerce")
-
-    h_match = s.str.extract(r"\bh(\d)\b")
-    h_num = pd.to_numeric(h_match[0], errors="coerce")
-
-    return cyl_num.fillna(v_num).fillna(i_num).fillna(h_num)
-
-
-def _first_token_clean(s: pd.Series) -> pd.Series:
-    s = _normalize_text_col(s)
-    return s.str.extract(r"([a-z0-9\-]+)")[0]
+    vals = vals.where((vals >= 2) & (vals <= 16), np.nan)
+    return vals
 
 
 def _cap_series(train_s: pd.Series, apply_s: pd.Series, low_q=0.01, high_q=0.99):
@@ -180,7 +187,7 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
             df[c] = _normalize_text_col(df[c])
 
     # -----------------------------
-    # Engineered categorical / numeric features
+    # Engineered features
     # -----------------------------
     if "model" in df.columns:
         df["model_base"] = _first_token_clean(df["model"])
@@ -197,20 +204,18 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     current_year = pd.Timestamp.now(tz=timezone).year if timezone else pd.Timestamp.now().year
 
     if "year_num" in df.columns:
-        df["vehicle_age"] = current_year - df["year_num"]
-        df["vehicle_age"] = df["vehicle_age"].where(df["vehicle_age"] >= 0, np.nan)
-
         if isinstance(posted_year, pd.Series):
             df["car_age_at_listing"] = posted_year - df["year_num"]
             df["car_age_at_listing"] = df["car_age_at_listing"].where(df["car_age_at_listing"] >= 0, np.nan)
         else:
             df["car_age_at_listing"] = np.nan
     else:
-        df["vehicle_age"] = np.nan
         df["car_age_at_listing"] = np.nan
 
-    if "mileage_num" in df.columns:
-        df["mileage_per_year"] = df["mileage_num"] / df["vehicle_age"].replace(0, np.nan)
+    if "mileage_num" in df.columns and "year_num" in df.columns:
+        vehicle_age_tmp = current_year - df["year_num"]
+        vehicle_age_tmp = vehicle_age_tmp.where(vehicle_age_tmp > 0, np.nan)
+        df["mileage_per_year"] = df["mileage_num"] / vehicle_age_tmp
     else:
         df["mileage_per_year"] = np.nan
 
@@ -275,7 +280,6 @@ def run_once(dry_run: bool = False):
 
     feature_outlier_cols = [
         "mileage_num",
-        "vehicle_age",
         "mileage_per_year",
         "engine_liters",
         "engine_cylinders",
@@ -298,7 +302,6 @@ def run_once(dry_run: bool = False):
     numeric_features = [
         "year_num",
         "mileage_num",
-        "vehicle_age",
         "mileage_per_year",
         "engine_liters",
         "engine_cylinders",
@@ -401,7 +404,6 @@ def run_once(dry_run: bool = False):
         output_cols = [
             "year_num",
             "mileage_num",
-            "vehicle_age",
             "mileage_per_year",
             "engine_liters",
             "engine_cylinders",
