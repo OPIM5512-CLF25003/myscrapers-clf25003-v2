@@ -22,10 +22,10 @@ from flask import Request, jsonify
 from google.api_core import retry as gax_retry
 from google.cloud import storage
 
-# ---- REQUIRED VERTEX AI IMPORTS ----
 import vertexai
-from vertexai.generative_models import GenerativeModel, GenerationConfig, Content
+from vertexai.generative_models import GenerativeModel, GenerationConfig
 from google.api_core.exceptions import ResourceExhausted, InternalServerError, Aborted, DeadlineExceeded
+
 
 # -------------------- ENV --------------------
 PROJECT_ID           = os.getenv("PROJECT_ID", "")
@@ -37,18 +37,14 @@ LLM_MODEL            = os.getenv("LLM_MODEL", "gemini-2.5-flash")
 OVERWRITE_DEFAULT    = os.getenv("OVERWRITE", "false").lower() == "true"
 MAX_FILES_DEFAULT    = int(os.getenv("MAX_FILES", "0") or 0)
 
-# GCS READ RETRY - Use default transient error logic
 READ_RETRY = gax_retry.Retry(
     predicate=gax_retry.if_transient_error,
     initial=1.0, maximum=10.0, multiplier=2.0, deadline=120.0
 )
 
-# LLM API RETRY PREDICATE
 def _if_llm_retryable(exception):
-    """Checks if the exception is transient and should trigger a retry."""
     return isinstance(exception, (ResourceExhausted, InternalServerError, Aborted, DeadlineExceeded))
 
-# LLM CALL RETRY
 LLM_RETRY = gax_retry.Retry(
     predicate=_if_llm_retryable,
     initial=5.0, maximum=30.0, multiplier=2.0, deadline=180.0,
@@ -57,20 +53,16 @@ LLM_RETRY = gax_retry.Retry(
 storage_client = storage.Client()
 _CACHED_MODEL_OBJ = None
 
-# Accept BOTH run id styles:
-RUN_ID_ISO_RE    = re.compile(r"^\d{8}T\d{6}Z$")
+RUN_ID_ISO_RE = re.compile(r"^\d{8}T\d{6}Z$")
 RUN_ID_PLAIN_RE = re.compile(r"^\d{14}$")
 
 
 # -------------------- HELPERS --------------------
 def _get_vertex_model() -> GenerativeModel:
-    """Initializes and returns the cached Vertex AI model object (thread-safe for CF)."""
     global _CACHED_MODEL_OBJ
     if _CACHED_MODEL_OBJ is None:
         if not PROJECT_ID:
             raise RuntimeError("PROJECT_ID environment variable is missing.")
-        
-        # Initialize client once per container lifecycle
         vertexai.init(project=PROJECT_ID, location=REGION)
         _CACHED_MODEL_OBJ = GenerativeModel(LLM_MODEL)
         logging.info(f"Initialized Vertex AI model: {LLM_MODEL} in {REGION}")
@@ -78,9 +70,6 @@ def _get_vertex_model() -> GenerativeModel:
 
 
 def _list_structured_run_ids(bucket: str, structured_prefix: str) -> list[str]:
-    """
-    List 'structured/run_id=*/' directories and return normalized run_ids.
-    """
     it = storage_client.list_blobs(bucket, prefix=f"{structured_prefix}/", delimiter="/")
     for _ in it:
         pass
@@ -96,9 +85,6 @@ def _list_structured_run_ids(bucket: str, structured_prefix: str) -> list[str]:
 
 
 def _normalize_run_id_iso(run_id: str) -> str:
-    """
-    Normalize run_id to ISO8601 Z string for provenance.
-    """
     try:
         if RUN_ID_ISO_RE.match(run_id):
             dt = datetime.strptime(run_id, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
@@ -112,17 +98,12 @@ def _normalize_run_id_iso(run_id: str) -> str:
 
 
 def _list_per_listing_jsonl_for_run(bucket: str, run_id: str) -> list[str]:
-    """
-    Return *input* per-listing JSONL object names for a given run_id
-    (assumes inputs are in 'jsonl/').
-    """
     prefix = f"{STRUCTURED_PREFIX}/run_id={run_id}/jsonl/"
     bucket_obj = storage_client.bucket(bucket)
     names = []
     for b in bucket_obj.list_blobs(prefix=prefix):
-        if not b.name.endswith(".jsonl"):
-            continue
-        names.append(b.name)
+        if b.name.endswith(".jsonl"):
+            names.append(b.name)
     return names
 
 
@@ -148,82 +129,313 @@ def _safe_int(x):
     try:
         if x is None or x == "":
             return None
-        return int(str(x).replace(",", "").strip())
+        return int(str(x).replace(",", "").replace("$", "").strip())
     except Exception:
         return None
 
 
+def _norm_str(x):
+    if x is None:
+        return None
+    x = str(x).strip()
+    return x if x else None
+
+
+def _norm_lower_str(x):
+    x = _norm_str(x)
+    return x.lower() if x else None
+
+
+def _normalize_transmission(x):
+    x = _norm_lower_str(x)
+    if not x:
+        return None
+    if "cvt" in x:
+        return "automatic"
+    if "auto" in x or "a/t" in x:
+        return "automatic"
+    if "manual" in x or "m/t" in x or "stick" in x:
+        return "manual"
+    return x
+
+
+def _normalize_fuel(x):
+    x = _norm_lower_str(x)
+    if not x:
+        return None
+    mapping = {
+        "gasoline": "gas",
+        "gas": "gas",
+        "diesel": "diesel",
+        "hybrid": "hybrid",
+        "electric": "electric",
+        "flex fuel": "flex fuel",
+        "flex-fuel": "flex fuel",
+        "plugin hybrid": "plug-in hybrid",
+        "plug-in hybrid": "plug-in hybrid",
+    }
+    return mapping.get(x, x)
+
+
+def _normalize_body_type(x):
+    x = _norm_lower_str(x)
+    if not x:
+        return None
+
+    body_map = {
+        "sport utility": "suv",
+        "sport utility vehicle": "suv",
+        "suv": "suv",
+        "wagon": "wagon",
+        "sedan": "sedan",
+        "coupe": "coupe",
+        "hatchback": "hatchback",
+        "convertible": "convertible",
+        "pickup": "truck",
+        "pickup truck": "truck",
+        "truck": "truck",
+        "van": "van",
+        "minivan": "minivan",
+        "4dr car": "sedan",
+        "2dr car": "coupe",
+        "crew cab pickup": "truck",
+    }
+    return body_map.get(x, x)
+
+
+def _normalize_drivetrain(x):
+    x = _norm_lower_str(x)
+    if not x:
+        return None
+
+    if x in {"awd", "all wheel drive", "all-wheel drive", "4matic", "xdrive", "quattro"}:
+        return "awd"
+    if x in {"4wd", "four wheel drive", "4 wheel drive"}:
+        return "4wd"
+    if x in {"fwd", "front wheel drive", "front-wheel drive"}:
+        return "fwd"
+    if x in {"rwd", "rear wheel drive", "rear-wheel drive"}:
+        return "rwd"
+    return x
+
+
+def _normalize_condition(x):
+    x = _norm_lower_str(x)
+    if not x:
+        return None
+    return x
+
+
+def _normalize_title_status(x):
+    x = _norm_lower_str(x)
+    if not x:
+        return None
+    return x
+
+
 # -------------------- VERTEX AI CALL --------------------
 def _vertex_extract_fields(raw_text: str) -> dict:
-    """
-    Ask Gemini to return JSON with exactly: price, year, make, model, series, mileage, vin, stock_number, fuel, transmission, body_type, color, title_status, condition, drivetrain, engine, mpg_city, mpg_highway, location_city, location_state, location_zip, full_address, dealer_name, phone, website, posted_date, post_id.
-    """
     model = _get_vertex_model()
 
-    # Strict JSON schema - FIX: Removed "additionalProperties": False
     schema = {
         "type": "object",
         "properties": {
             "price": {"type": "integer", "nullable": True},
             "year": {"type": "integer", "nullable": True},
-            "make": {"type": "string",  "nullable": True},
-            "model": {"type": "string",  "nullable": True},
-            "series": {"type": "string",  "nullable": True},
-            "trim": {"type": "string",  "nullable": True},
+            "make": {"type": "string", "nullable": True},
+            "model": {"type": "string", "nullable": True},
+            "series": {"type": "string", "nullable": True},
+            "trim": {"type": "string", "nullable": True},
             "mileage": {"type": "integer", "nullable": True},
-            "vin": {"type": "string",  "nullable": True},
-            "stock_number": {"type": "string",  "nullable": True},
-            "transmission": {"type": "string",  "nullable": True},
-            "body_type": {"type": "string",  "nullable": True},
-            "fuel": {"type": "string",  "nullable": True},
-            "color": {"type": "string",  "nullable": True},
-            "title_status": {"type": "string",  "nullable": True},
-            "condition": {"type": "string",  "nullable": True},
-            "drivetrain": {"type": "string",  "nullable": True},
-            "engine": {"type": "string",  "nullable": True},
+            "vin": {"type": "string", "nullable": True},
+            "stock_number": {"type": "string", "nullable": True},
+            "transmission": {"type": "string", "nullable": True},
+            "body_type": {"type": "string", "nullable": True},
+            "fuel": {"type": "string", "nullable": True},
+            "color": {"type": "string", "nullable": True},
+            "title_status": {"type": "string", "nullable": True},
+            "condition": {"type": "string", "nullable": True},
+            "drivetrain": {"type": "string", "nullable": True},
+            "engine": {"type": "string", "nullable": True},
             "mpg_city": {"type": "integer", "nullable": True},
             "mpg_highway": {"type": "integer", "nullable": True},
-            "location_city": {"type": "string",  "nullable": True},
-            "location_state": {"type": "string",  "nullable": True},
-            "location_zip": {"type": "string",  "nullable": True},
-            "full_address": {"type": "string",  "nullable": True},
-            "dealer_name": {"type": "string",  "nullable": True},
-            "phone": {"type": "string",  "nullable": True},
-            "website": {"type": "string",  "nullable": True},
-            "posted_date": {"type": "string",  "nullable": True},
-            "post_id": {"type": "string",  "nullable": True}
+            "location_city": {"type": "string", "nullable": True},
+            "location_state": {"type": "string", "nullable": True},
+            "location_zip": {"type": "string", "nullable": True},
+            "full_address": {"type": "string", "nullable": True},
+            "dealer_name": {"type": "string", "nullable": True},
+            "phone": {"type": "string", "nullable": True},
+            "website": {"type": "string", "nullable": True},
+            "posted_date": {"type": "string", "nullable": True},
+            "post_id": {"type": "string", "nullable": True}
         },
-        "required": ["price", "year", "make", "model", "mileage", "series", "trim", "vin", "stock_number", "transmission", "body_type", "fuel", "color", "title_status", "condition", "drivetrain", "engine", "mpg_city", "mpg_highway", "location_city", "location_state", "location_zip", "full_address", "dealer_name", "phone", "website", "posted_date", "post_id"]
+        "required": [
+            "price", "year", "make", "model", "series", "trim", "mileage",
+            "vin", "stock_number", "transmission", "body_type", "fuel", "color",
+            "title_status", "condition", "drivetrain", "engine",
+            "mpg_city", "mpg_highway",
+            "location_city", "location_state", "location_zip", "full_address",
+            "dealer_name", "phone", "website", "posted_date", "post_id"
+        ]
     }
 
-    # System instruction (will be prepended to the prompt)
-    sys_instr = (
-        "Extract ONLY the following fields from the input text. "
-        "Return a strict JSON object that conforms to the provided schema. "
-        "If a value is not present, use null. "
-    
-        "Rules: "
-        "price, year, mileage, mpg_city, mpg_highway must be integers; "
-        "price in USD; mileage in miles. "
-        
-        "transmission can be manual or automatic, or null if not listed. "
-        "fuel, body_type, color, title_status, condition, drivetrain should be extracted as text if present, otherwise null. "
-    
-        "vin, stock_number, engine, series, dealer_name, phone, website should be extracted exactly as shown in the text. "
-    
-        "location_city, location_state, location_zip should be extracted separately if available. "
-        "full_address should include the complete address if present. "
-    
-        "posted_date and post_id should be extracted as shown. "
-    
-        "Do not infer values not explicitly present; do not add extra keys."
-    )
+    sys_instr = """
+You are extracting structured vehicle listing data from messy Craigslist-style text.
 
-    # FIX: Combine instruction and text into one prompt string (SDK compatibility)
-    prompt = f"{sys_instr}\n\nTEXT:\n{raw_text}"
+Return one JSON object only. No markdown. No explanation.
+
+GENERAL RULES
+- Extract values even when formatting is inconsistent.
+- Prefer labeled fields first, then fallback to title/body text.
+- If the same field appears multiple times, choose the most specific or reliable value.
+- If a value clearly exists, do not return null just because formatting is unusual.
+- If a value truly does not exist, return null.
+- Never invent values.
+
+IMPORTANT FIELD RULES
+
+price:
+- Extract the listing sale price in USD as an integer.
+- Example: "$14,800" -> 14800
+
+year:
+- Extract the vehicle year as a 4-digit integer.
+
+make:
+- Extract brand name such as BMW, Subaru, Toyota, Chevrolet.
+- Standardize obvious aliases:
+  Chevy -> Chevrolet
+  VW -> Volkswagen
+  Mercedes Benz -> Mercedes-Benz
+  Infinity -> Infiniti
+
+model:
+- Extract the main model name only when possible.
+- Examples:
+  "BMW 5 Series" -> "5 Series"
+  "Mazda CX-5" -> "CX-5"
+  "Subaru XV Crosstrek" -> "XV Crosstrek"
+
+series:
+- Extract trim/series details if present beyond make/model.
+- Examples:
+  "2.0i Premium AWD 4dr Crossover CVT"
+  "535i xDrive AWD"
+  If absent, return null.
+
+trim:
+- Extract trim if clearly stated, otherwise null.
+
+mileage:
+- Extract odometer/miles as integer.
+- Examples:
+  "100,300" -> 100300
+  "odometer: 154,359" -> 154359
+
+vin:
+- Extract VIN exactly.
+
+stock_number:
+- Extract stock number exactly.
+
+transmission:
+- Look for labels like:
+  "transmission:", "Transmission:", "A/T", "M/T", "CVT"
+- Normalize:
+  CVT -> automatic
+  Automatic / A/T -> automatic
+  Manual / M/T / stick -> manual
+
+body_type:
+- Use labels such as "type:" or "Body:".
+- Normalize common values:
+  Sport Utility / SUV -> suv
+  4dr Car -> sedan
+  Wagon -> wagon
+  Sedan -> sedan
+  Coupe -> coupe
+  Hatchback -> hatchback
+  Sport Utility -> suv
+  Pickup / Truck -> truck
+
+fuel:
+- Normalize common values:
+  gasoline -> gas
+  gas -> gas
+  diesel -> diesel
+  hybrid -> hybrid
+  electric -> electric
+  flex fuel -> flex fuel
+
+color:
+- Use exterior paint color if present.
+- Prefer explicit labels like "paint color:" or "Color:".
+- If two colors are mentioned like "Black on Black Leather", use exterior color.
+
+title_status:
+- Extract values like clean, rebuilt, salvage.
+
+condition:
+- Extract labeled condition such as excellent, good, like new, fair.
+- If not labeled and clearly described in text, use that only if obvious.
+
+drivetrain:
+- Look for "drive:" or terms like AWD, FWD, RWD, 4WD, xDrive, 4MATIC, quattro.
+- Normalize:
+  xDrive / quattro / 4MATIC / AWD -> awd
+  4WD -> 4wd
+  FWD -> fwd
+  RWD -> rwd
+
+engine:
+- Extract the best full engine description, not just cylinders.
+- Prefer specific engine lines like:
+  "3L Straight 6 Cylinder Engine"
+  "2.0L H4 148hp 145ft. lbs."
+  "3.5L V6 Direct Injection"
+- If only cylinders are present, use that rather than null.
+
+mpg_city and mpg_highway:
+- Extract integers from patterns like:
+  "26 city / 33 highway"
+  "29 M.P.G." only if clearly attributable.
+- If only one MPG value exists and city/highway split is unclear, return null for both.
+
+location_city, location_state, location_zip:
+- Extract separately when address or location appears.
+- Example:
+  "Stamford, CT 06902" -> city=Stamford, state=CT, zip=06902
+
+full_address:
+- Extract full street address if present.
+- Example:
+  "115 Jefferson St Stamford, CT 06902"
+
+dealer_name:
+- Extract from "Offered by:" or dealer block if seller is a dealer.
+- For owner listings with no dealer, return null.
+
+phone:
+- Extract best phone number.
+
+website:
+- Extract website URL/domain if present.
+
+posted_date:
+- Extract the posted timestamp exactly as shown when possible.
+- Examples:
+  "2026-03-24 14:30"
+  "2026-03-24 10:01"
+
+post_id:
+- Extract post ID exactly.
+
+Return JSON only.
+"""
+
+    prompt = f"{sys_instr}\n\nLISTING TEXT:\n{raw_text}"
 
     gen_cfg = GenerationConfig(
-        # FIX: system_instruction removed to fix TypeError 
         temperature=0.0,
         top_p=1.0,
         top_k=40,
@@ -232,21 +444,17 @@ def _vertex_extract_fields(raw_text: str) -> dict:
         response_schema=schema,
     )
 
-    # --- LLM CALL WITH RETRY ---
     max_attempts = 3
     resp = None
     for attempt in range(max_attempts):
         try:
-            # Pass the single string prompt
             resp = model.generate_content(prompt, generation_config=gen_cfg)
             break
         except Exception as e:
-            # Includes the 404/NotFound error from the previous run
             if not _if_llm_retryable(e) or attempt == max_attempts - 1:
                 logging.error(f"Fatal/non-retryable LLM error or max retries reached: {e}")
                 raise
-            
-            sleep_time = LLM_RETRY._calculate_sleep(attempt)
+            sleep_time = 5 * (2 ** attempt)
             logging.warning(f"Transient LLM error on attempt {attempt+1}/{max_attempts}. Retrying in {sleep_time:.2f}s...")
             time.sleep(sleep_time)
 
@@ -255,27 +463,42 @@ def _vertex_extract_fields(raw_text: str) -> dict:
 
     parsed = json.loads(resp.text)
 
-    # Normalize fields post-extraction
     parsed["price"] = _safe_int(parsed.get("price"))
     parsed["year"] = _safe_int(parsed.get("year"))
     parsed["mileage"] = _safe_int(parsed.get("mileage"))
-    
-    def _norm_str(s):
-        if s is None: return None
-        s = str(s).strip()
-        return s if s else None
+    parsed["mpg_city"] = _safe_int(parsed.get("mpg_city"))
+    parsed["mpg_highway"] = _safe_int(parsed.get("mpg_highway"))
 
     parsed["make"] = _norm_str(parsed.get("make"))
     parsed["model"] = _norm_str(parsed.get("model"))
+    parsed["series"] = _norm_str(parsed.get("series"))
+    parsed["trim"] = _norm_str(parsed.get("trim"))
+    parsed["vin"] = _norm_str(parsed.get("vin"))
+    parsed["stock_number"] = _norm_str(parsed.get("stock_number"))
+    parsed["color"] = _norm_str(parsed.get("color"))
+    parsed["engine"] = _norm_str(parsed.get("engine"))
+    parsed["dealer_name"] = _norm_str(parsed.get("dealer_name"))
+    parsed["phone"] = _norm_str(parsed.get("phone"))
+    parsed["website"] = _norm_str(parsed.get("website"))
+    parsed["posted_date"] = _norm_str(parsed.get("posted_date"))
+    parsed["post_id"] = _norm_str(parsed.get("post_id"))
+    parsed["full_address"] = _norm_str(parsed.get("full_address"))
+    parsed["location_city"] = _norm_str(parsed.get("location_city"))
+    parsed["location_state"] = _norm_str(parsed.get("location_state"))
+    parsed["location_zip"] = _norm_str(parsed.get("location_zip"))
+
+    parsed["transmission"] = _normalize_transmission(parsed.get("transmission"))
+    parsed["fuel"] = _normalize_fuel(parsed.get("fuel"))
+    parsed["body_type"] = _normalize_body_type(parsed.get("body_type"))
+    parsed["drivetrain"] = _normalize_drivetrain(parsed.get("drivetrain"))
+    parsed["condition"] = _normalize_condition(parsed.get("condition"))
+    parsed["title_status"] = _normalize_title_status(parsed.get("title_status"))
 
     return parsed
 
 
 # -------------------- HTTP ENTRY --------------------
 def llm_extract_http(request: Request):
-    """
-    Reads latest (or requested) run's per-listing JSONL inputs and writes LLM outputs.
-    """
     logging.getLogger().setLevel(logging.INFO)
 
     if not BUCKET_NAME:
@@ -285,7 +508,6 @@ def llm_extract_http(request: Request):
     if LLM_PROVIDER != "vertex":
         return jsonify({"ok": False, "error": "PoC supports LLM_PROVIDER='vertex' only"}), 400
 
-    # Body overrides
     try:
         body = request.get_json(silent=True) or {}
     except Exception:
@@ -295,7 +517,6 @@ def llm_extract_http(request: Request):
     max_files = int(body.get("max_files") or MAX_FILES_DEFAULT or 0)
     overwrite = bool(body.get("overwrite")) if "overwrite" in body else OVERWRITE_DEFAULT
 
-    # Pick newest run if not provided
     if not run_id:
         runs = _list_structured_run_ids(BUCKET_NAME, STRUCTURED_PREFIX)
         if not runs:
@@ -317,7 +538,6 @@ def llm_extract_http(request: Request):
     for in_key in inputs:
         processed += 1
         try:
-            # Read the tiny JSON line (single record)
             raw_line = _download_text(in_key).strip()
             if not raw_line:
                 raise ValueError("empty input jsonl")
@@ -331,7 +551,6 @@ def llm_extract_http(request: Request):
             if not source_txt_key:
                 raise ValueError("missing source_txt in input record")
 
-            # Output path: uses 'jsonl_llm/' folder
             out_prefix = in_key.rsplit("/", 2)[0] + "/jsonl_llm"
             out_key = out_prefix + f"/{post_id}_llm.jsonl"
 
@@ -339,13 +558,9 @@ def llm_extract_http(request: Request):
                 skipped += 1
                 continue
 
-            # Fetch the raw listing TXT; send to LLM
             raw_listing = _download_text(source_txt_key)
-
             parsed = _vertex_extract_fields(raw_listing)
 
-                     
-            # Compose final record
             out_record = {
                 "post_id": post_id,
                 "run_id": base_rec.get("run_id", run_id),
