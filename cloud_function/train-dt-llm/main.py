@@ -102,13 +102,8 @@ def _first_token_clean(s: pd.Series) -> pd.Series:
 
 def _extract_engine_liters(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.lower()
-
-    # examples handled:
-    # 2.5l, 3.6l, 2.0 liter, 4.7, 1.8 turbo
     liters = s.str.extract(r"(\d+(?:\.\d+)?)\s*(?:l|liter|litre)?")[0]
     vals = pd.to_numeric(liters, errors="coerce")
-
-    # realistic engine sizes only
     vals = vals.where((vals >= 0.6) & (vals <= 8.5), np.nan)
     return vals
 
@@ -116,8 +111,6 @@ def _extract_engine_liters(s: pd.Series) -> pd.Series:
 def _extract_engine_cylinders(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.lower()
 
-    # examples handled:
-    # 6 cylinders, 4-cylinder, v6, v-8, i4, h4
     cyl_1 = s.str.extract(r"(\d+)\s*[- ]?(?:cyl|cylinder|cylinders)")[0]
     cyl_2 = s.str.extract(r"\bv[- ]?(\d+)\b")[0]
     cyl_3 = s.str.extract(r"\bi[- ]?(\d+)\b")[0]
@@ -127,9 +120,52 @@ def _extract_engine_cylinders(s: pd.Series) -> pd.Series:
     vals = vals.fillna(pd.to_numeric(cyl_2, errors="coerce"))
     vals = vals.fillna(pd.to_numeric(cyl_3, errors="coerce"))
     vals = vals.fillna(pd.to_numeric(cyl_4, errors="coerce"))
-
     vals = vals.where((vals >= 2) & (vals <= 16), np.nan)
     return vals
+
+
+def _normalize_transmission(s: pd.Series) -> pd.Series:
+    s = _normalize_text_col(s)
+    if s is None:
+        return s
+    s = s.replace({
+        "cvt": "automatic",
+        "a/t": "automatic",
+        "m/t": "manual",
+    })
+    s = s.where(~s.fillna("").str.contains("cvt|auto"), "automatic")
+    s = s.where(~s.fillna("").str.contains("manual|stick"), "manual")
+    return s
+
+
+def _normalize_fuel(s: pd.Series) -> pd.Series:
+    s = _normalize_text_col(s)
+    return s.replace({
+        "gasoline": "gas",
+        "flex-fuel": "flex fuel",
+        "plugin hybrid": "plug-in hybrid",
+    })
+
+
+def _normalize_body_type(s: pd.Series) -> pd.Series:
+    s = _normalize_text_col(s)
+    return s.replace({
+        "sport utility": "suv",
+        "sport utility vehicle": "suv",
+        "4dr car": "sedan",
+        "2dr car": "coupe",
+        "pickup": "truck",
+        "pickup truck": "truck",
+    })
+
+
+def _normalize_condition(s: pd.Series) -> pd.Series:
+    return _normalize_text_col(s)
+
+
+def _normalize_state(s: pd.Series) -> pd.Series:
+    s = s.astype(str).str.strip().str.upper().replace({"NAN": np.nan, "NONE": np.nan, "": np.nan})
+    return s
 
 
 def _cap_series(train_s: pd.Series, apply_s: pd.Series, low_q=0.01, high_q=0.99):
@@ -163,11 +199,9 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
         scraped_naive = df["scraped_at_local"].dt.tz_localize(None, ambiguous="NaT", nonexistent="NaT")
         df["days_since_posted"] = (scraped_naive - df["posted_date_dt"]).dt.days
         df["days_since_posted"] = df["days_since_posted"].where(df["days_since_posted"] >= 0, np.nan)
-        posted_year = df["posted_date_dt"].dt.year
     else:
         df["posted_date_dt"] = pd.NaT
         df["days_since_posted"] = np.nan
-        posted_year = np.nan
 
     # -----------------------------
     # Numeric cleaning
@@ -182,35 +216,49 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     if "make" in df.columns:
         df["make"] = _standardize_make(df["make"])
 
-    for c in ["model", "transmission", "fuel", "condition", "body_type", "engine", "location_state"]:
-        if c in df.columns:
-            df[c] = _normalize_text_col(df[c])
-
-    # -----------------------------
-    # Engineered features
-    # -----------------------------
     if "model" in df.columns:
+        df["model"] = _normalize_text_col(df["model"])
         df["model_base"] = _first_token_clean(df["model"])
     else:
         df["model_base"] = np.nan
 
+    if "transmission" in df.columns:
+        df["transmission"] = _normalize_transmission(df["transmission"])
+    else:
+        df["transmission"] = np.nan
+
+    if "fuel" in df.columns:
+        df["fuel"] = _normalize_fuel(df["fuel"])
+    else:
+        df["fuel"] = np.nan
+
+    if "condition" in df.columns:
+        df["condition"] = _normalize_condition(df["condition"])
+    else:
+        df["condition"] = np.nan
+
+    if "body_type" in df.columns:
+        df["body_type"] = _normalize_body_type(df["body_type"])
+    else:
+        df["body_type"] = np.nan
+
+    if "location_state" in df.columns:
+        df["location_state"] = _normalize_state(df["location_state"])
+    else:
+        df["location_state"] = np.nan
+
     if "engine" in df.columns:
+        df["engine"] = _normalize_text_col(df["engine"])
         df["engine_liters"] = _extract_engine_liters(df["engine"])
         df["engine_cylinders"] = _extract_engine_cylinders(df["engine"])
     else:
         df["engine_liters"] = np.nan
         df["engine_cylinders"] = np.nan
 
+    # -----------------------------
+    # Engineered numeric features
+    # -----------------------------
     current_year = pd.Timestamp.now(tz=timezone).year if timezone else pd.Timestamp.now().year
-
-    if "year_num" in df.columns:
-        if isinstance(posted_year, pd.Series):
-            df["car_age_at_listing"] = posted_year - df["year_num"]
-            df["car_age_at_listing"] = df["car_age_at_listing"].where(df["car_age_at_listing"] >= 0, np.nan)
-        else:
-            df["car_age_at_listing"] = np.nan
-    else:
-        df["car_age_at_listing"] = np.nan
 
     if "mileage_num" in df.columns and "year_num" in df.columns:
         vehicle_age_tmp = current_year - df["year_num"]
@@ -218,6 +266,13 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
         df["mileage_per_year"] = df["mileage_num"] / vehicle_age_tmp
     else:
         df["mileage_per_year"] = np.nan
+
+    # -----------------------------
+    # Missingness flags
+    # -----------------------------
+    df["engine_liters_missing"] = df["engine_liters"].isna().astype(int)
+    df["engine_cylinders_missing"] = df["engine_cylinders"].isna().astype(int)
+    df["days_since_posted_missing"] = df["days_since_posted"].isna().astype(int)
 
     return df
 
@@ -306,6 +361,9 @@ def run_once(dry_run: bool = False):
         "engine_liters",
         "engine_cylinders",
         "days_since_posted",
+        "engine_liters_missing",
+        "engine_cylinders_missing",
+        "days_since_posted_missing",
     ]
 
     categorical_features = [
@@ -363,11 +421,11 @@ def run_once(dry_run: bool = False):
     ])
 
     param_grid = {
-        "model__n_estimators": [200, 300],
-        "model__max_depth": [10, None],
-        "model__min_samples_split": [2, 5],
-        "model__min_samples_leaf": [1, 2],
-        "model__max_features": ["sqrt"]
+        "model__n_estimators": [200, 400],
+        "model__max_depth": [10, 20, None],
+        "model__min_samples_split": [2, 5, 10],
+        "model__min_samples_leaf": [1, 2, 4],
+        "model__max_features": ["sqrt", 0.7]
     }
 
     tscv = TimeSeriesSplit(n_splits=4)
@@ -396,18 +454,24 @@ def run_once(dry_run: bool = False):
     preds_df = pd.DataFrame()
 
     logging.info("Holdout rows available for prediction: %d", len(X_holdout))
+    logging.info("Training features used: %s", features)
 
     if len(X_holdout) > 0:
         y_hat = best_pipe.predict(X_holdout)
 
-        # Hardcoded output = only final model columns
+        # Fixed output schema: identifiers + final model columns only
         output_cols = [
+            "post_id",
+            "scraped_at",
             "year_num",
             "mileage_num",
             "mileage_per_year",
             "engine_liters",
             "engine_cylinders",
             "days_since_posted",
+            "engine_liters_missing",
+            "engine_cylinders_missing",
+            "days_since_posted_missing",
             "make",
             "model_base",
             "transmission",
@@ -416,7 +480,10 @@ def run_once(dry_run: bool = False):
             "body_type",
             "location_state",
         ]
-        output_cols = [c for c in output_cols if c in holdout_df.columns]
+
+        for c in output_cols:
+            if c not in holdout_df.columns:
+                holdout_df[c] = np.nan
 
         preds_df = holdout_df[output_cols].copy()
         preds_df["actual_price"] = y_holdout.values
@@ -484,6 +551,7 @@ def run_once(dry_run: bool = False):
         "top_pdp_features": top_numeric,
         "pdp_files": pdp_files,
         "feature_count": len(features),
+        "features_used": features,
         "numeric_feature_count": len(numeric_features),
         "categorical_feature_count": len(categorical_features),
         "target_train_cap": {"low": price_lo, "high": price_hi},
