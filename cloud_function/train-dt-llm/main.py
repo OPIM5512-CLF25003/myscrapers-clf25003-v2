@@ -64,14 +64,14 @@ def _write_bytes_to_gcs(client: storage.Client, bucket: str, key: str, data: byt
 
 
 # =========================================================
-# CLEANING / FEATURE HELPERS
+# BASIC HELPERS
 # =========================================================
 def _clean_numeric(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.replace(r"[^\d.]+", "", regex=True).str.strip()
     return pd.to_numeric(s, errors="coerce")
 
 
-def _normalize_text_col(s: pd.Series) -> pd.Series:
+def _norm_text(s: pd.Series) -> pd.Series:
     return (
         s.astype(str)
         .str.strip()
@@ -80,8 +80,8 @@ def _normalize_text_col(s: pd.Series) -> pd.Series:
     )
 
 
-def _standardize_make(s: pd.Series) -> pd.Series:
-    s = _normalize_text_col(s)
+def _std_make(s: pd.Series) -> pd.Series:
+    s = _norm_text(s)
     replacements = {
         "chevy": "chevrolet",
         "vw": "volkswagen",
@@ -95,51 +95,45 @@ def _standardize_make(s: pd.Series) -> pd.Series:
     return s.replace(replacements)
 
 
-def _first_token_clean(s: pd.Series) -> pd.Series:
-    s = _normalize_text_col(s)
+def _model_base(s: pd.Series) -> pd.Series:
+    s = _norm_text(s)
     return s.str.extract(r"([a-z0-9]+(?:-[a-z0-9]+)?)")[0]
 
 
-def _extract_engine_liters(s: pd.Series) -> pd.Series:
+def _eng_l(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.lower()
-    liters = s.str.extract(r"(\d+(?:\.\d+)?)\s*(?:l|liter|litre)?")[0]
-    vals = pd.to_numeric(liters, errors="coerce")
+    vals = s.str.extract(r"(\d+(?:\.\d+)?)\s*(?:l|liter|litre)?")[0]
+    vals = pd.to_numeric(vals, errors="coerce")
     vals = vals.where((vals >= 0.6) & (vals <= 8.5), np.nan)
     return vals
 
 
-def _extract_engine_cylinders(s: pd.Series) -> pd.Series:
+def _eng_cyl(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.lower()
 
-    cyl_1 = s.str.extract(r"(\d+)\s*[- ]?(?:cyl|cylinder|cylinders)")[0]
-    cyl_2 = s.str.extract(r"\bv[- ]?(\d+)\b")[0]
-    cyl_3 = s.str.extract(r"\bi[- ]?(\d+)\b")[0]
-    cyl_4 = s.str.extract(r"\bh[- ]?(\d+)\b")[0]
+    cyl1 = s.str.extract(r"(\d+)\s*[- ]?(?:cyl|cylinder|cylinders)")[0]
+    cyl2 = s.str.extract(r"\bv[- ]?(\d+)\b")[0]
+    cyl3 = s.str.extract(r"\bi[- ]?(\d+)\b")[0]
+    cyl4 = s.str.extract(r"\bh[- ]?(\d+)\b")[0]
 
-    vals = pd.to_numeric(cyl_1, errors="coerce")
-    vals = vals.fillna(pd.to_numeric(cyl_2, errors="coerce"))
-    vals = vals.fillna(pd.to_numeric(cyl_3, errors="coerce"))
-    vals = vals.fillna(pd.to_numeric(cyl_4, errors="coerce"))
+    vals = pd.to_numeric(cyl1, errors="coerce")
+    vals = vals.fillna(pd.to_numeric(cyl2, errors="coerce"))
+    vals = vals.fillna(pd.to_numeric(cyl3, errors="coerce"))
+    vals = vals.fillna(pd.to_numeric(cyl4, errors="coerce"))
     vals = vals.where((vals >= 2) & (vals <= 16), np.nan)
     return vals
 
 
-def _normalize_transmission(s: pd.Series) -> pd.Series:
-    s = _normalize_text_col(s)
-    if s is None:
-        return s
-    s = s.replace({
-        "cvt": "automatic",
-        "a/t": "automatic",
-        "m/t": "manual",
-    })
+def _norm_trans(s: pd.Series) -> pd.Series:
+    s = _norm_text(s)
+    s = s.replace({"cvt": "automatic", "a/t": "automatic", "m/t": "manual"})
     s = s.where(~s.fillna("").str.contains("cvt|auto"), "automatic")
     s = s.where(~s.fillna("").str.contains("manual|stick"), "manual")
     return s
 
 
-def _normalize_fuel(s: pd.Series) -> pd.Series:
-    s = _normalize_text_col(s)
+def _norm_fuel(s: pd.Series) -> pd.Series:
+    s = _norm_text(s)
     return s.replace({
         "gasoline": "gas",
         "flex-fuel": "flex fuel",
@@ -147,8 +141,8 @@ def _normalize_fuel(s: pd.Series) -> pd.Series:
     })
 
 
-def _normalize_body_type(s: pd.Series) -> pd.Series:
-    s = _normalize_text_col(s)
+def _norm_body(s: pd.Series) -> pd.Series:
+    s = _norm_text(s)
     return s.replace({
         "sport utility": "suv",
         "sport utility vehicle": "suv",
@@ -159,13 +153,17 @@ def _normalize_body_type(s: pd.Series) -> pd.Series:
     })
 
 
-def _normalize_condition(s: pd.Series) -> pd.Series:
-    return _normalize_text_col(s)
+def _norm_cond(s: pd.Series) -> pd.Series:
+    return _norm_text(s)
 
 
-def _normalize_state(s: pd.Series) -> pd.Series:
-    s = s.astype(str).str.strip().str.upper().replace({"NAN": np.nan, "NONE": np.nan, "": np.nan})
-    return s
+def _norm_state(s: pd.Series) -> pd.Series:
+    return (
+        s.astype(str)
+        .str.strip()
+        .str.upper()
+        .replace({"NAN": np.nan, "NONE": np.nan, "": np.nan})
+    )
 
 
 def _cap_series(train_s: pd.Series, apply_s: pd.Series, low_q=0.01, high_q=0.99):
@@ -177,102 +175,113 @@ def _cap_series(train_s: pd.Series, apply_s: pd.Series, low_q=0.01, high_q=0.99)
     return apply_s.clip(lower=lo, upper=hi), float(lo), float(hi)
 
 
+def _ensure_cols(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    df = df.copy()
+    for c in cols:
+        if c not in df.columns:
+            df[c] = np.nan
+    return df
+
+
+# =========================================================
+# TYPE CHECK + FORMAT CONVERSION
+# =========================================================
+def _prepare_base_types(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    # datetime columns
+    if "scraped_at" in df.columns:
+        df["scraped_at"] = pd.to_datetime(df["scraped_at"], errors="coerce", utc=True)
+
+    if "posted_date" in df.columns:
+        df["posted_date"] = pd.to_datetime(df["posted_date"], errors="coerce")
+
+    # numeric-like raw columns
+    for c in ["price", "year", "mileage", "mpg_city", "mpg_highway", "location_zip"]:
+        if c in df.columns:
+            df[c] = _clean_numeric(df[c])
+
+    # text columns
+    text_cols = [
+        "make", "model", "series", "transmission", "fuel", "body_type",
+        "color", "title_status", "condition", "drivetrain", "engine",
+        "location_city", "location_state", "full_address", "dealer_name",
+        "phone", "website", "source_txt"
+    ]
+    for c in text_cols:
+        if c in df.columns:
+            df[c] = df[c].astype(str).replace({"nan": np.nan, "None": np.nan})
+
+    return df
+
+
 # =========================================================
 # FEATURE ENGINEERING
 # =========================================================
 def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     df = df.copy()
 
-    # -----------------------------
-    # Datetime parsing
-    # -----------------------------
-    df["scraped_at_dt_utc"] = pd.to_datetime(df["scraped_at"], errors="coerce", utc=True)
+    # local time / date
+    df["scraped_at_local"] = df["scraped_at"]
     try:
-        df["scraped_at_local"] = df["scraped_at_dt_utc"].dt.tz_convert(timezone)
+        df["scraped_at_local"] = df["scraped_at"].dt.tz_convert(timezone)
     except Exception:
-        df["scraped_at_local"] = df["scraped_at_dt_utc"]
+        pass
 
     df["date_local"] = df["scraped_at_local"].dt.date
 
-    if "posted_date" in df.columns:
-        df["posted_date_dt"] = pd.to_datetime(df["posted_date"], errors="coerce")
-        scraped_naive = df["scraped_at_local"].dt.tz_localize(None, ambiguous="NaT", nonexistent="NaT")
-        df["days_since_posted"] = (scraped_naive - df["posted_date_dt"]).dt.days
-        df["days_since_posted"] = df["days_since_posted"].where(df["days_since_posted"] >= 0, np.nan)
-    else:
-        df["posted_date_dt"] = pd.NaT
-        df["days_since_posted"] = np.nan
-
-    # -----------------------------
-    # Numeric cleaning
-    # -----------------------------
-    for c in ["price", "year", "mileage"]:
-        if c in df.columns:
-            df[f"{c}_num"] = _clean_numeric(df[c])
-
-    # -----------------------------
-    # Text normalization
-    # -----------------------------
+    # clean raw source columns first
     if "make" in df.columns:
-        df["make"] = _standardize_make(df["make"])
-
+        df["make"] = _std_make(df["make"])
     if "model" in df.columns:
-        df["model"] = _normalize_text_col(df["model"])
-        df["model_base"] = _first_token_clean(df["model"])
-    else:
-        df["model_base"] = np.nan
-
+        df["model"] = _norm_text(df["model"])
     if "transmission" in df.columns:
-        df["transmission"] = _normalize_transmission(df["transmission"])
-    else:
-        df["transmission"] = np.nan
-
+        df["transmission"] = _norm_trans(df["transmission"])
     if "fuel" in df.columns:
-        df["fuel"] = _normalize_fuel(df["fuel"])
-    else:
-        df["fuel"] = np.nan
-
+        df["fuel"] = _norm_fuel(df["fuel"])
     if "condition" in df.columns:
-        df["condition"] = _normalize_condition(df["condition"])
-    else:
-        df["condition"] = np.nan
-
+        df["condition"] = _norm_cond(df["condition"])
     if "body_type" in df.columns:
-        df["body_type"] = _normalize_body_type(df["body_type"])
-    else:
-        df["body_type"] = np.nan
-
+        df["body_type"] = _norm_body(df["body_type"])
     if "location_state" in df.columns:
-        df["location_state"] = _normalize_state(df["location_state"])
-    else:
-        df["location_state"] = np.nan
-
+        df["location_state"] = _norm_state(df["location_state"])
     if "engine" in df.columns:
-        df["engine"] = _normalize_text_col(df["engine"])
-        df["engine_liters"] = _extract_engine_liters(df["engine"])
-        df["engine_cylinders"] = _extract_engine_cylinders(df["engine"])
-    else:
-        df["engine_liters"] = np.nan
-        df["engine_cylinders"] = np.nan
+        df["engine"] = _norm_text(df["engine"])
 
-    # -----------------------------
-    # Engineered numeric features
-    # -----------------------------
+    # short engineered names
+    df["p"] = df["price"] if "price" in df.columns else np.nan
+    df["yr"] = df["year"] if "year" in df.columns else np.nan
+    df["mi"] = df["mileage"] if "mileage" in df.columns else np.nan
+
+    df["mk"] = df["make"] if "make" in df.columns else np.nan
+    df["mdl"] = _model_base(df["model"]) if "model" in df.columns else np.nan
+    df["trn"] = df["transmission"] if "transmission" in df.columns else np.nan
+    df["ful"] = df["fuel"] if "fuel" in df.columns else np.nan
+    df["cnd"] = df["condition"] if "condition" in df.columns else np.nan
+    df["bdy"] = df["body_type"] if "body_type" in df.columns else np.nan
+    df["st"] = df["location_state"] if "location_state" in df.columns else np.nan
+
+    df["eng_l"] = _eng_l(df["engine"]) if "engine" in df.columns else np.nan
+    df["eng_c"] = _eng_cyl(df["engine"]) if "engine" in df.columns else np.nan
+
+    # recency
+    if "posted_date" in df.columns:
+        scraped_naive = df["scraped_at_local"].dt.tz_localize(None, ambiguous="NaT", nonexistent="NaT")
+        df["days_post"] = (scraped_naive - df["posted_date"]).dt.days
+        df["days_post"] = df["days_post"].where(df["days_post"] >= 0, np.nan)
+    else:
+        df["days_post"] = np.nan
+
+    # usage intensity
     current_year = pd.Timestamp.now(tz=timezone).year if timezone else pd.Timestamp.now().year
+    vehicle_age_tmp = current_year - df["yr"]
+    vehicle_age_tmp = vehicle_age_tmp.where(vehicle_age_tmp > 0, np.nan)
+    df["mi_py"] = df["mi"] / vehicle_age_tmp
 
-    if "mileage_num" in df.columns and "year_num" in df.columns:
-        vehicle_age_tmp = current_year - df["year_num"]
-        vehicle_age_tmp = vehicle_age_tmp.where(vehicle_age_tmp > 0, np.nan)
-        df["mileage_per_year"] = df["mileage_num"] / vehicle_age_tmp
-    else:
-        df["mileage_per_year"] = np.nan
-
-    # -----------------------------
-    # Missingness flags
-    # -----------------------------
-    df["engine_liters_missing"] = df["engine_liters"].isna().astype(int)
-    df["engine_cylinders_missing"] = df["engine_cylinders"].isna().astype(int)
-    df["days_since_posted_missing"] = df["days_since_posted"].isna().astype(int)
+    # missingness flags
+    df["eng_l_miss"] = df["eng_l"].isna().astype(int)
+    df["eng_c_miss"] = df["eng_c"].isna().astype(int)
+    df["days_post_miss"] = df["days_post"].isna().astype(int)
 
     return df
 
@@ -289,8 +298,13 @@ def run_once(dry_run: bool = False):
     if missing:
         raise ValueError(f"Missing required columns: {sorted(missing)}")
 
+    # 1) datatype checks + conversion
+    df = _prepare_base_types(df)
+
+    # 2) feature engineering with short/easy names
     df = _feature_engineering(df, TIMEZONE)
 
+    # 3) split by today vs past
     unique_dates = sorted(d for d in df["date_local"].dropna().unique())
     if len(unique_dates) < 2:
         return {
@@ -303,17 +317,13 @@ def run_once(dry_run: bool = False):
     train_df = df[df["date_local"] < today_local].copy()
     holdout_df = df[df["date_local"] == today_local].copy()
 
-    # Keep only rows with target
-    train_df = train_df[train_df["price_num"].notna()].copy()
-    holdout_df = holdout_df[holdout_df["price_num"].notna()].copy()
+    # 4) keep only rows with target
+    train_df = train_df[train_df["p"].notna()].copy()
+    holdout_df = holdout_df[holdout_df["p"].notna()].copy()
 
-    # Basic sanity filters
-    if "year_num" in train_df.columns:
-        train_df = train_df[(train_df["price_num"] >= 500) & (train_df["year_num"] >= 1980)].copy()
-        holdout_df = holdout_df[(holdout_df["price_num"] >= 500) & (holdout_df["year_num"] >= 1980)].copy()
-    else:
-        train_df = train_df[train_df["price_num"] >= 500].copy()
-        holdout_df = holdout_df[holdout_df["price_num"] >= 500].copy()
+    # 5) sanity filters
+    train_df = train_df[(train_df["p"] >= 500) & (train_df["yr"] >= 1980)].copy()
+    holdout_df = holdout_df[(holdout_df["p"] >= 500) & (holdout_df["yr"] >= 1980)].copy()
 
     if len(train_df) < 50:
         return {
@@ -322,73 +332,60 @@ def run_once(dry_run: bool = False):
             "train_rows": int(len(train_df))
         }
 
-    # Sort before TimeSeriesSplit
     train_df = train_df.sort_values("scraped_at_local").reset_index(drop=True)
     holdout_df = holdout_df.sort_values("scraped_at_local").reset_index(drop=True)
 
-    # -----------------------------
-    # Outlier handling
-    # -----------------------------
-    train_df["price_num"], price_lo, price_hi = _cap_series(
-        train_df["price_num"], train_df["price_num"], 0.01, 0.99
-    )
+    # 6) outlier handling
+    train_df["p"], p_lo, p_hi = _cap_series(train_df["p"], train_df["p"], 0.01, 0.99)
 
-    feature_outlier_cols = [
-        "mileage_num",
-        "mileage_per_year",
-        "engine_liters",
-        "engine_cylinders",
-        "days_since_posted",
-    ]
+    outlier_cols = ["mi", "mi_py", "eng_l", "eng_c", "days_post"]
     outlier_caps = {}
-
-    for c in feature_outlier_cols:
+    for c in outlier_cols:
         if c in train_df.columns:
             train_df[c], lo, hi = _cap_series(train_df[c], train_df[c], 0.01, 0.99)
             outlier_caps[c] = {"low": lo, "high": hi}
             if c in holdout_df.columns and not np.isnan(lo) and not np.isnan(hi):
                 holdout_df[c] = holdout_df[c].clip(lo, hi)
 
-    target = "price_num"
+    target = "p"
 
-    # -----------------------------
-    # HIGH IMPACT FEATURES ONLY
-    # -----------------------------
-    numeric_features = [
-        "year_num",
-        "mileage_num",
-        "mileage_per_year",
-        "engine_liters",
-        "engine_cylinders",
-        "days_since_posted",
-        "engine_liters_missing",
-        "engine_cylinders_missing",
-        "days_since_posted_missing",
+    # 7) final model columns
+    num_feats = [
+        "yr",
+        "mi",
+        "mi_py",
+        "eng_l",
+        "eng_c",
+        "days_post",
+        "eng_l_miss",
+        "eng_c_miss",
+        "days_post_miss",
     ]
 
-    categorical_features = [
-        "make",
-        "model_base",
-        "transmission",
-        "fuel",
-        "condition",
-        "body_type",
-        "location_state",
+    cat_feats = [
+        "mk",
+        "mdl",
+        "trn",
+        "ful",
+        "cnd",
+        "bdy",
+        "st",
     ]
 
-    numeric_features = [c for c in numeric_features if c in train_df.columns]
-    categorical_features = [c for c in categorical_features if c in train_df.columns]
-    features = numeric_features + categorical_features
+    num_feats = [c for c in num_feats if c in train_df.columns]
+    cat_feats = [c for c in cat_feats if c in train_df.columns]
+    feats = num_feats + cat_feats
 
-    if not features:
+    if not feats:
         return {"status": "noop", "reason": "no valid features available after preprocessing"}
 
-    X_train = train_df[features].copy()
+    X_train = train_df[feats].copy()
     y_train = train_df[target].copy()
 
-    X_holdout = holdout_df[features].copy() if len(holdout_df) > 0 else pd.DataFrame(columns=features)
+    X_holdout = holdout_df[feats].copy() if len(holdout_df) > 0 else pd.DataFrame(columns=feats)
     y_holdout = holdout_df[target].copy() if len(holdout_df) > 0 else pd.Series(dtype=float)
 
+    # 8) missing value handling inside pipeline
     pre = ColumnTransformer(
         transformers=[
             (
@@ -396,7 +393,7 @@ def run_once(dry_run: bool = False):
                 Pipeline([
                     ("imp", SimpleImputer(strategy="median"))
                 ]),
-                numeric_features
+                num_feats
             ),
             (
                 "cat",
@@ -404,22 +401,20 @@ def run_once(dry_run: bool = False):
                     ("imp", SimpleImputer(strategy="most_frequent")),
                     ("oh", OneHotEncoder(handle_unknown="ignore"))
                 ]),
-                categorical_features
+                cat_feats
             ),
         ],
         remainder="drop"
     )
 
-    base_model = RandomForestRegressor(
-        random_state=42,
-        n_jobs=-1
-    )
+    model = RandomForestRegressor(random_state=42, n_jobs=-1)
 
     pipe = Pipeline([
         ("pre", pre),
-        ("model", base_model)
+        ("model", model)
     ])
 
+    # 9) hyperparameter tuning
     param_grid = {
         "model__n_estimators": [200, 400],
         "model__max_depth": [10, 20, None],
@@ -443,60 +438,47 @@ def run_once(dry_run: bool = False):
     grid.fit(X_train, y_train)
     best_pipe = grid.best_estimator_
 
-    # Run folder
     now_utc = pd.Timestamp.now(tz="UTC")
     base_out = f"{OUTPUT_PREFIX}/{now_utc.strftime('%Y%m%d%H')}"
 
-    # -----------------------------
-    # Predict today's listings
-    # -----------------------------
+    # 10) predict only today’s listings
     mae_today = None
     preds_df = pd.DataFrame()
-
-    logging.info("Holdout rows available for prediction: %d", len(X_holdout))
-    logging.info("Training features used: %s", features)
 
     if len(X_holdout) > 0:
         y_hat = best_pipe.predict(X_holdout)
 
-        # Fixed output schema: identifiers + final model columns only
+        # output only identifiers + final model columns + actual/pred
         output_cols = [
             "post_id",
             "scraped_at",
-            "year_num",
-            "mileage_num",
-            "mileage_per_year",
-            "engine_liters",
-            "engine_cylinders",
-            "days_since_posted",
-            "engine_liters_missing",
-            "engine_cylinders_missing",
-            "days_since_posted_missing",
-            "make",
-            "model_base",
-            "transmission",
-            "fuel",
-            "condition",
-            "body_type",
-            "location_state",
+            "yr",
+            "mi",
+            "mi_py",
+            "eng_l",
+            "eng_c",
+            "days_post",
+            "eng_l_miss",
+            "eng_c_miss",
+            "days_post_miss",
+            "mk",
+            "mdl",
+            "trn",
+            "ful",
+            "cnd",
+            "bdy",
+            "st",
         ]
 
-        for c in output_cols:
-            if c not in holdout_df.columns:
-                holdout_df[c] = np.nan
+        holdout_df = _ensure_cols(holdout_df, output_cols)
 
         preds_df = holdout_df[output_cols].copy()
         preds_df["actual_price"] = y_holdout.values
         preds_df["pred_price"] = np.round(y_hat, 2)
 
         mae_today = float(mean_absolute_error(y_holdout, y_hat))
-        logging.info("Prediction rows written to preds_df: %d", len(preds_df))
-    else:
-        logging.warning("Holdout set is empty; preds-llm.csv will not be created.")
 
-    # -----------------------------
-    # Permutation importance
-    # -----------------------------
+    # 11) permutation importance
     perm_X = X_holdout if len(X_holdout) > 0 else X_train
     perm_y = y_holdout if len(X_holdout) > 0 else y_train
 
@@ -511,18 +493,16 @@ def run_once(dry_run: bool = False):
     )
 
     importance_df = pd.DataFrame({
-        "feature": features,
+        "feature": feats,
         "importance_mean": perm.importances_mean,
         "importance_std": perm.importances_std
     }).sort_values("importance_mean", ascending=False)
 
-    # -----------------------------
-    # PDP for top 3 numeric features
-    # -----------------------------
-    top_numeric = [f for f in importance_df["feature"].tolist() if f in numeric_features][:3]
+    # 12) PDP for top 3 numeric features
+    top_num = [f for f in importance_df["feature"].tolist() if f in num_feats][:3]
     pdp_files = []
 
-    for f in top_numeric:
+    for f in top_num:
         fig, ax = plt.subplots(figsize=(7, 4))
         PartialDependenceDisplay.from_estimator(
             best_pipe,
@@ -548,13 +528,13 @@ def run_once(dry_run: bool = False):
         "mae_today": mae_today,
         "best_params": grid.best_params_,
         "best_cv_mae": float(-grid.best_score_),
-        "top_pdp_features": top_numeric,
+        "features_used": feats,
+        "top_pdp_features": top_num,
         "pdp_files": pdp_files,
-        "feature_count": len(features),
-        "features_used": features,
-        "numeric_feature_count": len(numeric_features),
-        "categorical_feature_count": len(categorical_features),
-        "target_train_cap": {"low": price_lo, "high": price_hi},
+        "feature_count": len(feats),
+        "numeric_feature_count": len(num_feats),
+        "categorical_feature_count": len(cat_feats),
+        "target_train_cap": {"low": p_lo, "high": p_hi},
         "feature_caps": outlier_caps,
     }
 
@@ -564,9 +544,6 @@ def run_once(dry_run: bool = False):
 
         _write_csv_to_gcs(client, GCS_BUCKET, f"{base_out}/permutation_importance.csv", importance_df)
         _write_json_to_gcs(client, GCS_BUCKET, f"{base_out}/metrics.json", metrics)
-        logging.info("Artifacts written to gs://%s/%s/", GCS_BUCKET, base_out)
-    else:
-        logging.info("Dry run enabled. No CSV/JSON outputs written.")
 
     return {
         "status": "ok",
@@ -576,7 +553,7 @@ def run_once(dry_run: bool = False):
         "mae_today": mae_today,
         "best_params": grid.best_params_,
         "best_cv_mae": float(-grid.best_score_),
-        "top_3_numeric_pdp_features": top_numeric,
+        "top_3_numeric_pdp_features": top_num,
         "dry_run": dry_run
     }
 
@@ -587,9 +564,7 @@ def run_once(dry_run: bool = False):
 def train_rf_tuned_http(request):
     try:
         body = request.get_json(silent=True) or {}
-        result = run_once(
-            dry_run=bool(body.get("dry_run", False))
-        )
+        result = run_once(dry_run=bool(body.get("dry_run", False)))
         code = 200 if result.get("status") == "ok" else 204
         return (json.dumps(result), code, {"Content-Type": "application/json"})
     except Exception as e:
