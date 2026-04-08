@@ -1,0 +1,70 @@
+name: Sync All GCS Results to GitHub
+
+run-name: Syncing all result files for ${{ github.ref_name }} by @${{ github.actor }}
+
+on:
+  schedule:
+    - cron: '45 * * * *'   # runs every hour at minute 45
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  BUCKET_NAME: ${{ vars.BUCKET_NAME }}
+
+jobs:
+  sync-results:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Authenticate with Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.SERVICE_ACCOUNT }}
+
+      # 3. Setup gcloud CLI
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 4. Sync ALL files from GCS → results/all-files
+      - name: Sync all files from GCS to results/all-files
+        run: |
+          set -e
+
+          GCS_PREFIX="gs://${BUCKET_NAME}/results/"
+          LOCAL_DIR="results/all-files"
+
+          echo "Creating local directory: ${LOCAL_DIR}"
+          mkdir -p "${LOCAL_DIR}"
+
+          echo "Copying ALL files from ${GCS_PREFIX} to ${LOCAL_DIR}"
+
+          # Copy everything recursively (including subfolders)
+          gsutil -m cp -r "${GCS_PREFIX}**" "${LOCAL_DIR}/" || true
+
+          echo "Files copied:"
+          find "${LOCAL_DIR}" -type f | sort || true
+
+      # 5. Commit and push to GitHub
+      - name: Commit and push files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add results/all-files/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Sync all GCS files to results/all-files"
+            git push
+          fi
