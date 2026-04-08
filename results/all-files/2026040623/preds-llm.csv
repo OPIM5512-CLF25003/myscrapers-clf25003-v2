@@ -1,0 +1,279 @@
+year_num,mileage_num,mileage_per_year,engine_liters,engine_cylinders,days_since_posted,make,model_base,transmission,fuel,condition,body_type,location_state,actual_price,pred_price
+2002,150000.0,6250.0,,,1.0,dodge,neon,automatic,gas,,,ct,3288.0,3738.29
+1988,69541.0,1830.0263157894738,5.0,8.0,3.0,chevrolet,caprice,automatic,gas,used,wagon,ct,17500.0,10679.06
+2011,115212.0,7680.8,4.6,8.0,5.0,lexus,ls,automatic,gas,used,4dr car,ct,13500.0,11776.52
+2006,131986.0,6599.3,3.0,6.0,3.0,lexus,gs,automatic,gas,used,4dr car,ct,8900.0,9425.36
+2002,150000.0,6250.0,,,14.0,dodge,neon,automatic,gas,,,ct,3288.0,3288.0
+2018,19539.0,2442.375,8.0,8.0,15.0,lexus,lc,automatic,gas,excellent,,ct,48920.0,12247.91
+2013,100775.0,7751.923076923077,2.5,4.0,3.0,toyota,avalon,automatic,gas,used,4dr car,ct,14800.0,9472.76
+2013,185000.0,14230.76923076923,4.0,4.0,3.0,subaru,impreza,automatic,gas,excellent,hatchback,ct,3500.0,6414.33
+2016,48019.0,4801.9,6.0,6.0,3.0,dodge,grand,automatic,gas,used,"mini-van, passenger",ct,12850.0,9623.87
+2016,161000.0,16100.0,,,9.0,audi,a3,automatic,gas,fair,sedan,ct,1600.0,6131.38
+2015,142000.0,12909.09090909091,3.0,6.0,3.0,bmw,x5,automatic,gas,excellent,suv,ct,8985.0,10642.06
+2019,145143.0,20734.714285714286,2.0,4.0,1.0,hyundai,kona,automatic,gas,used,sport utility,ct,8975.0,11862.7
+2014,118290.0,9857.5,2.4,4.0,1.0,hyundai,sonata,automatic,gas,excellent,sedan,ct,7900.0,7052.46
+2018,188779.0,23597.375,2.0,4.0,15.0,subaru,crosstrek,automatic,gas,like new,hatchback,ct,6900.0,11898.37
+2017,105189.0,11687.666666666666,2.0,4.0,16.0,hyundai,elantra,automatic,gas,used,sedan,ct,8900.0,10321.74
+2000,50000.0,1923.076923076923,6.0,6.0,2.0,ford,ranger,automatic,gas,,pickup,ct,6500.0,7663.36
+2019,42250.0,6035.714285714285,,,16.0,audi,a6,automatic,gas,excellent,sedan,ct,17000.0,11475.73
+2002,150000.0,6250.0,,,9.0,dodge,neon,automatic,gas,,,ct,3288.0,3671.87
+2016,136978.0,13697.8,2.5,4.0,1.0,subaru,outback,automatic,gas,used,wagon,ct,11998.0,9246.86
+2020,35125.0,5854.166666666667,4.0,4.0,3.0,ford,fusion,automatic,gas,used,4dr car,ct,14850.0,12250.01
+2013,181000.0,13923.076923076924,3.5,6.0,1.0,ford,f-150,automatic,gas,,pickup,ct,6505.0,8913.11
+2008,250000.0,13888.888888888889,4.8,,16.0,chevrolet,silverado,automatic,gas,good,truck,ct,3800.0,5600.43
+2019,71241.0,10177.285714285714,2.0,4.0,16.0,audi,a4,automatic,gas,used,4dr car,ct,13800.0,14675.99
+2008,222789.0,12377.166666666666,1.8760000000000001,,2.0,toyota,corolla,automatic,gas,good,sedan,ct,2400.0,5410.72
+2001,273000.0,10920.0,8.0,8.0,7.0,toyota,land,automatic,gas,fair,suv,ct,4000.0,3939.2
+2012,166000.0,11857.142857142857,6.0,6.0,2.0,acura,mdx,automatic,gas,excellent,suv,ct,7900.0,6845.73
+1995,174000.0,5612.903225806452,4.0,4.0,3.0,jeep,wrangler,manual,gas,good,offroad,ct,5000.0,6368.52
+2022,8440.0,1355.6470588235295,,,0.0,bedrock,flatbed,other,other,,truck,ct,3500.0,23156.81
+2016,173177.0,17317.7,4.0,4.0,16.0,toyota,prius,automatic,hybrid,good,hatchback,ct,9499.0,8056.69
+2013,108000.0,8307.692307692309,4.0,,16.0,volkswagen,tiguan,automatic,gas,excellent,suv,ct,6200.0,8393.89
+2014,123296.0,10274.666666666666,1.8760000000000001,4.0,1.0,kia,soul,automatic,gas,excellent,wagon,ct,5900.0,8423.38
+2018,33000.0,4125.0,6.0,6.0,0.0,toyota,camry,automatic,gas,like new,sedan,ct,2000.0,2606.46
+2015,116669.0,10606.272727272728,2.4,4.0,16.0,kia,optima,automatic,gas,used,sedan,ct,8800.0,8456.06
+2010,190000.0,11875.0,5.0,5.0,1.0,volkswagen,jetta,manual,gas,excellent,wagon,connecticut,3000.0,6426.82
+1985,59000.0,1439.0243902439024,1.8760000000000001,8.0,16.0,chevrolet,el,automatic,gas,excellent,coupe,ct,25500.0,20350.04
+2013,108356.0,8335.076923076924,8.0,8.0,16.0,ford,econoline,automatic,gas,used,full-size cargo van,ct,12900.0,9989.92
+2023,108905.0,24560.374500000005,1.8760000000000001,4.0,5.0,hyundai,elantra,automatic,gas,used,4dr car,ct,16750.0,15016.9
+2002,150000.0,6250.0,,,6.0,dodge,neon,automatic,gas,,,ct,3288.0,3668.68
+2020,77916.0,12986.0,2.0,4.0,3.0,audi,q3,automatic,gas,used,sport utility,ct,18900.0,14423.4
+2015,130759.0,11887.181818181818,1.8760000000000001,4.0,3.0,honda,civic,automatic,gas,used,sedan,ct,9400.0,8273.22
+2014,173000.0,14416.666666666666,4.0,4.0,9.0,volkswagen,jetta,automatic,gas,excellent,sedan,ct,4200.0,6021.5
+2014,130000.0,10833.333333333334,2.4,,1.0,honda,cr-v,automatic,gas,excellent,suv,ct,11900.0,11016.4
+2013,101000.0,7769.2307692307695,2.5,5.0,10.0,volvo,s60,automatic,gas,great condition,sedan,ct,5485.0,7194.76
+2002,168886.0,7036.916666666667,6.0,6.0,16.0,chevrolet,impala,automatic,gas,fair,sedan,ct,2500.0,5039.59
+2015,183000.0,16636.363636363636,4.0,4.0,8.0,subaru,impreza,automatic,gas,excellent,hatchback,ct,4800.0,8076.04
+2018,153518.0,19189.75,8.0,8.0,3.0,gmc,yukon,automatic,gas,used,sport utility,ct,15990.0,11171.33
+2011,56000.0,3733.3333333333335,4.0,4.0,12.0,honda,civic,automatic,natural gas,excellent,sedan,ct,3400.0,5842.45
+2002,150000.0,6250.0,,,15.0,dodge,neon,automatic,gas,,,ct,3288.0,3288.0
+2023,20228.0,6742.666666666667,3.6,6.0,16.0,chrysler,pacifica,automatic 9-speed,gasoline,like new,minivan,nh,68993.0,33632.41
+2015,128879.0,11716.272727272728,,,0.0,kia,sportage,automatic,gas,excellent,suv,ct,7500.0,7787.06
+2015,55526.0,5047.818181818182,,,1.0,mercedes-benz,gla-class,automatic,gas,like new,suv,ct,7400.0,11181.9
+2020,82675.0,13779.166666666666,2.5,4.0,3.0,nissan,rogue,automatic,gas,used,sport utility,ct,13800.0,12162.36
+2018,86540.0,10817.5,2.0,4.0,5.0,bmw,x1,automatic,gas,used,sport utility,ct,13500.0,12600.64
+2024,8440.0,1355.6470588235295,3.6,6.0,14.0,ram,promaster,automatic,gasoline,new,van,nh,88993.0,29191.5
+2016,120070.0,12007.0,3.5,6.0,3.0,honda,pilot,automatic,gas,used,sport utility,ct,12990.0,10617.92
+2019,121000.0,17285.714285714286,2.0,4.0,1.0,hyundai,elantra,automatic,gas,excellent,sedan,ct,7900.0,8687.51
+2014,108456.0,9038.0,4.0,4.0,16.0,ford,focus,automatic,gas,like new,hatchback,ct,5500.0,8527.89
+2012,130671.0,9333.642857142857,2.5,4.0,6.0,subaru,outback,automatic,gas,used,wagon,ct,8998.0,8351.89
+2018,94000.0,11750.0,4.0,4.0,16.0,chevrolet,equinox,automatic,gas,good,suv,ct,9500.0,10717.56
+2007,136320.0,7174.736842105263,6.0,6.0,6.0,chevrolet,impala,automatic,gas,good,sedan,ct,2995.0,4934.65
+2006,111000.0,5550.0,4.0,8.0,9.0,chevrolet,impala,automatic,gas,excellent,sedan,ct,6750.0,6899.73
+2011,129550.0,8636.666666666666,3.7,6.0,16.0,ram,dakota,automatic,gas,used,truck,ct,9700.0,7789.08
+2017,80000.0,8888.888888888889,6.0,6.0,8.0,subaru,outback,automatic,gas,excellent,suv,ct,21000.0,9621.66
+2014,120228.0,10019.0,4.0,4.0,16.0,subaru,xv,automatic,hybrid,good,hatchback,ct,8999.0,8405.36
+2012,150492.0,10749.42857142857,2.4,,15.0,honda,accord,automatic,gas,excellent,sedan,ct,6900.0,6323.97
+2019,54917.0,7845.285714285715,6.0,6.0,3.0,dodge,charger,automatic,gas,used,4dr car,ct,10800.0,10042.32
+2010,128000.0,8000.0,8.0,8.0,1.0,infiniti,qx56,automatic,gas,excellent,suv,ct,6200.0,6173.0
+2012,71000.0,5071.428571428572,2.0,4.0,2.0,bmw,528i,automatic,gas,excellent,sedan,ct,7985.0,8928.36
+2004,93000.0,4227.272727272727,6.0,6.0,14.0,chrysler,crossfire,automatic,gas,excellent,coupe,ct,7500.0,17047.34
+2015,174302.0,15845.636363636364,2.5,4.0,9.0,subaru,outback,cvt,gas,used,wagon,ct,9998.0,8734.02
+2015,123897.0,11263.363636363636,3.5,6.0,3.0,mercedes-benz,glk-class,automatic,gas,used,sport utility,ct,8800.0,11623.06
+2018,139096.0,17387.0,3.0,6.0,3.0,infiniti,q50,automatic,gas,used,4dr car,ct,14850.0,13110.09
+2015,92276.0,8388.727272727272,2.0,4.0,3.0,ford,fusion,automatic,gas,used,4dr car,ct,10850.0,10330.12
+2017,106743.0,11860.333333333334,6.0,6.0,3.0,ford,f-150,automatic,gas,used,pickup,ct,18995.0,11747.34
+1998,165000.0,5892.857142857143,,,16.0,toyota,camry,automatic,gas,,sedan,ct,2600.0,5632.57
+2018,79633.0,9954.125,2.0,4.0,3.0,bmw,x2,automatic,gas,used,sport utility,ct,15500.0,12494.73
+2010,133500.0,8343.75,4.0,4.0,12.0,hyundai,elantra,automatic,gas,good,sedan,ct,3300.0,5415.84
+1986,273600.00000000006,24560.374500000005,4.3,,1.0,chevrolet,el,automatic,gas,good,,ct,6000.0,6001.95
+2013,121347.0,9334.384615384615,1.8760000000000001,4.0,1.0,nissan,versa,automatic,gas,excellent,sedan,ct,3500.0,5067.64
+2005,142350.0,6778.571428571428,6.0,6.0,11.0,ford,ranger,manual,gas,good,pickup,ct,8000.0,5010.35
+2015,132799.0,12072.636363636364,2.5,4.0,3.0,subaru,forester,cvt,gas,used,wagon,ct,10998.0,9349.17
+2006,131986.0,6599.3,3.0,6.0,0.0,lexus,gs,automatic,gas,used,4dr car,ct,8900.0,9156.12
+2002,150000.0,6250.0,,,2.0,dodge,neon,automatic,gas,,,ct,3288.0,3672.05
+2019,42250.0,6035.714285714285,,,2.0,audi,a6,automatic,gas,excellent,sedan,ct,17000.0,10073.32
+2016,185000.0,18500.0,4.0,4.0,3.0,subaru,forester,automatic,gas,excellent,suv,ct,7500.0,8087.34
+2019,71241.0,10177.285714285714,2.0,4.0,0.0,audi,a4,automatic,gas,used,sedan,ct,15900.0,11154.51
+2018,101615.0,12701.875,5.0,8.0,3.0,land rover,range,automatic,gas,used,sport utility,ct,31900.0,19109.43
+2012,145400.0,10385.714285714286,2.0,4.0,1.0,volkswagen,tiguan,manual,gas,fair,suv,ct,2500.0,6698.16
+2016,120070.0,12007.0,3.5,6.0,0.0,honda,pilot,automatic,gas,used,sport utility,ct,12990.0,10380.56
+2017,98165.0,10907.222222222223,2.5,4.0,16.0,toyota,camry,automatic,gas,like new,sedan,ct,14700.0,11349.11
+2015,124948.0,11358.90909090909,6.0,6.0,10.0,mercedes-benz,gl,automatic,gas,excellent,suv,ct,10950.0,9818.99
+1983,25257.0,1355.6470588235295,8.0,8.0,14.0,chevrolet,c,automatic,gas,good,pickup,ct,3550.0,11465.29
+2010,133500.0,8343.75,4.0,4.0,12.0,hyundai,electra,automatic,gas,good,coupe,ct,3300.0,12205.46
+2015,149000.0,13545.454545454546,4.0,4.0,14.0,honda,accord,automatic,gas,excellent,sedan,ct,7500.0,6702.58
+2000,104000.0,4000.0,,,9.0,ford,ranger,automatic,gas,good,pickup,ct,3500.0,6877.2
+2015,92417.0,8401.545454545454,3.5,6.0,16.0,honda,pilot,automatic,gas,used,sport utility,ct,11950.0,9937.6
+2011,105405.0,7027.0,3.7,6.0,15.0,ford,mustang,manual,gas,like new,coupe,ct,10900.0,17887.4
+2015,74500.0,6772.727272727273,4.0,4.0,13.0,honda,civic,automatic,gas,excellent,,ct,9000.0,7923.85
+2008,167190.0,9288.333333333334,4.3,6.0,14.0,chevrolet,silverado,automatic,gas,good,pickup,ct,7999.0,5561.74
+2008,131799.0,7322.166666666667,4.0,4.0,12.0,acura,rdx,automatic,gas,,suv,ct,7995.0,6108.42
+2015,159707.0,14518.818181818182,3.5,6.0,9.0,toyota,sienna,automatic,gas,like new,minivan,ct,12900.0,8573.75
+2020,113946.0,18991.0,5.3,8.0,16.0,chevrolet,suburban,automatic,gas,like new,suv,ct,21900.0,16543.52
+2020,20000.0,3333.3333333333335,8.0,8.0,0.0,honda,accord,automatic,gas,like new,sedan,ct,2000.0,2408.48
+2021,61000.0,12200.0,6.0,6.0,1.0,tesla,model,automatic,electric,like new,wagon,ct,5000.0,5750.74
+2015,130000.0,11818.181818181818,3.5,6.0,3.0,mercedes-benz,glk350,automatic,gas,excellent,suv,ct,9885.0,10059.8
+2018,71621.0,8952.625,6.0,6.0,7.0,ford,f-150,automatic,gas,excellent,pickup,ct,29955.0,12479.53
+2012,132567.0,9469.07142857143,4.0,4.0,15.0,chevrolet,malibu,automatic,gas,excellent,sedan,ct,3995.0,6785.04
+2015,150818.0,13710.727272727272,2.5,4.0,16.0,subaru,forester,automatic,gas,like new,suv,ct,6900.0,9057.56
+2013,138000.0,10615.384615384615,6.0,6.0,8.0,chevrolet,equinox,automatic,gas,good,suv,ct,4950.0,5868.75
+2018,71621.0,8952.625,6.0,6.0,15.0,ford,f-150,automatic,gas,excellent,pickup,ct,29920.0,14351.23
+2014,163000.0,13583.333333333334,6.0,6.0,10.0,jeep,wrangler,manual,gas,excellent,suv,ct,8000.0,7895.88
+2020,89000.0,14833.333333333334,,,1.0,dodge,charger,automatic,gas,excellent,sedan,ct,12500.0,9410.51
+2013,112885.0,8683.461538461539,1.8760000000000001,4.0,13.0,honda,civic,automatic,gas,excellent,sedan,nh,9999.0,7163.79
+2018,137100.0,17137.5,2.0,4.0,9.0,ford,edge,automatic,gas,,sport utility,ct,10800.0,13084.16
+1997,131000.0,4517.241379310345,8.0,8.0,9.0,ford,f250,automatic,gas,good,pickup,ct,5500.0,6414.96
+2011,190000.0,12666.666666666666,,,9.0,subaru,outback,automatic,gas,good,wagon,ct,3750.0,6137.7
+2026,8440.0,,3.6,6.0,0.0,chrysler,pacifica,automatic,gas,new,minivan,nh,74495.0,44752.19
+2015,119500.0,10863.636363636364,2.5,4.0,9.0,ford,escape,automatic,gas,clean,sport utility,ct,7800.0,8822.48
+2018,135100.0,16887.5,2.0,4.0,12.0,chevrolet,equinox,automatic,gas,"pre-owned, repaired",sport utility,ct,12800.0,11698.92
+2008,144000.0,8000.0,6.0,6.0,10.0,acura,tl,other,gas,good,sedan,ct,3800.0,4519.9
+2001,246000.0,9840.0,6.0,,3.0,chevrolet,silverado,automatic,diesel,good,pickup,ct,5000.0,5922.95
+2012,140000.0,10000.0,4.0,4.0,11.0,nissan,altima,automatic,gas,excellent,,ct,5000.0,5740.57
+1986,273600.00000000006,24560.374500000005,4.3,,13.0,chevrolet,el,automatic,gas,good,,ct,6000.0,6248.45
+2017,95262.0,10584.666666666666,3.0,6.0,3.0,land rover,range,automatic,gas,used,sport utility,ct,16900.0,16650.81
+2009,220000.0,12941.176470588236,6.0,6.0,0.0,mitsubishi,1800,automatic,diesel,good,truck,ct,8000.0,5878.38
+2010,163117.0,10194.8125,4.0,4.0,14.0,nissan,altima,automatic,gas,good,sedan,ct,4500.0,4560.18
+2005,66167.0,3150.809523809524,5.3,8.0,6.0,chevrolet,express,automatic,gasoline,used,van,nh,25993.0,9527.33
+2015,130759.0,11887.181818181818,1.8760000000000001,4.0,0.0,honda,civic,automatic,gas,used,4dr car,ct,9400.0,9596.4
+2012,172000.0,12285.714285714286,4.0,4.0,14.0,mazda,5,automatic,gas,excellent,van,ct,3800.0,7252.9
+2017,56588.0,6287.555555555556,4.0,4.0,4.0,ford,focus,automatic,gas,excellent,coupe,ct,8300.0,16488.84
+1987,79000.0,2025.6410256410256,5.0,8.0,5.0,foord,f150,manual,gas,fair,pickup,ct,7500.0,7231.37
+2014,150000.0,12500.0,4.0,4.0,6.0,honda,civic,automatic,gas,excellent,,ct,6999.0,8092.92
+2015,264719.0,24065.363636363636,8.0,8.0,2.0,ford,super,automatic,diesel,used,truck,ct,16900.0,11423.61
+2018,139096.0,17387.0,3.0,6.0,0.0,infiniti,q50,automatic,gas,used,4dr car,ct,14850.0,12837.09
+2019,114950.0,16421.428571428572,2.0,4.0,2.0,subaru,crosstrek,automatic,gas,like new,hatchback,ct,13900.0,11588.6
+2012,93250.0,6660.714285714285,4.0,4.0,7.0,toyota,camry,automatic,gas,excellent,sedan,ct,13800.0,7400.82
+2018,136170.0,17021.25,2.5,4.0,10.0,subaru,outback,automatic,gas,used,wagon,ct,13998.0,10289.25
+2009,70000.0,4117.64705882353,4.0,4.0,11.0,toyota,camry,automatic,gas,excellent,sedan,,9000.0,5909.26
+2013,163000.0,12538.461538461539,6.0,6.0,10.0,chrysler,town,automatic,gas,excellent,minivan,ct,4900.0,8167.84
+2020,77916.0,12986.0,2.0,4.0,0.0,audi,q3,automatic,gas,used,sport utility,ct,17980.0,14129.47
+2021,119058.0,23811.6,3.6,6.0,16.0,jeep,grand,automatic,gas,used,sport utility,ct,21950.0,15103.18
+1998,260000.0,9285.714285714286,4.0,4.0,9.0,subaru,outback,manual,gas,good,wagon,ct,1550.0,5513.89
+2014,106997.0,8916.416666666666,2.5,4.0,0.0,subaru,outback,automatic,gas,used,wagon,ct,10998.0,9423.67
+2018,133333.0,16666.625,6.0,6.0,11.0,toyota,highlander,automatic,gas,excellent,suv,ct,12450.0,11135.8
+2012,166000.0,11857.142857142857,6.0,6.0,15.0,chrysler,town,automatic,gas,good,minivan,ct,1550.0,5916.71
+2006,135000.0,6750.0,6.0,6.0,6.0,nissan,quest,automatic,gas,good,minivan,ct,2000.0,4654.14
+2005,273600.00000000006,14857.142857142857,6.0,,15.0,ford,f-350,automatic,diesel,good,pickup,ct,14900.0,7170.92
+2002,150000.0,6250.0,,,16.0,dodge,neon,automatic,gas,,,ct,3288.0,3498.3
+2016,200489.0,20048.9,6.0,6.0,5.0,mercedes-benz,sprinter,automatic,diesel,excellent,van,ct,12000.0,12242.86
+2018,100000.0,12500.0,3.0,,5.0,bmw,x5,automatic,gas,great condition,suv,ct,20999.0,13774.27
+2018,93146.0,11643.25,3.0,6.0,6.0,land rover,range,automatic,gas,used,sport utility,ct,20950.0,17708.56
+2008,170484.0,9471.333333333334,8.0,8.0,6.0,chevrolet,express,automatic,gas,good,van,ct,8995.0,7182.14
+2012,136000.0,9714.285714285714,4.0,4.0,7.0,honda,civic,automatic,gas,excellent,sedan,ct,3500.0,6861.69
+2009,215000.0,12647.058823529413,3.2,,15.0,audi,a5,6-speed manual,gas,fair,coupe,ct,2500.0,13053.16
+2015,141800.0,12890.90909090909,2.0,4.0,13.0,volkswagen,jetta,automatic,gas,,4dr car,ct,6800.0,8210.15
+2013,168000.0,12923.076923076924,6.0,6.0,13.0,lexus,rx,automatic,gas,like new,suv,ct,9800.0,7121.76
+2013,164000.0,12615.384615384615,,,4.0,ford,e-450,automatic,gas,,bus,ct,44995.0,6246.56
+2014,82595.0,6882.916666666667,8.0,8.0,0.0,mercedes-benz,s-class,automatic,gas,used,4dr car,ct,20900.0,14536.4
+2018,72433.0,9054.125,3.5,6.0,16.0,acura,mdx,automatic,gas,used,suv,ct,17990.0,11579.88
+2015,80600.0,7327.272727272727,2.0,4.0,13.0,cadillac,ats,automatic,gas,repaired,sedan,ct,13800.0,9399.36
+2004,80982.0,3681.0,8.0,8.0,14.0,mercedes-benz,s500,automatic,gas,like new,sedan,ct,8995.0,10696.6
+2002,150000.0,6250.0,,,13.0,dodge,neon,automatic,gas,,,ct,3288.0,3322.05
+2000,197000.0,7576.923076923077,3.8,,14.0,ford,mustang,manual,gas,good,convertible,ct,3900.0,7632.3
+2006,130000.0,6500.0,6.0,6.0,2.0,jeep,grand,automatic,gas,,suv,ma,3950.0,4948.75
+2016,141229.0,14122.9,2.5,4.0,16.0,toyota,rav4,automatic,hybrid,like new,suv,ct,13900.0,10388.99
+2018,163000.0,20375.0,6.0,6.0,0.0,jeep,grand,automatic,gas,excellent,suv,ct,9500.0,10281.87
+2012,67592.0,4828.0,8.0,8.0,2.0,chevrolet,silverado,automatic,gas,used,truck,ct,14850.0,7535.58
+2014,85972.0,7164.333333333333,4.0,4.0,2.0,volkswagen,passat,automatic,gas,excellent,sedan,ct,8900.0,8059.98
+2016,149000.0,14900.0,6.0,6.0,0.0,audi,q5,automatic,gas,excellent,suv,ct,7200.0,7539.24
+2015,81802.0,7436.545454545455,3.2,6.0,2.0,jeep,cherokee,automatic,gas,excellent,suv,ct,9900.0,9818.68
+2012,160899.0,11492.785714285714,2.5,4.0,16.0,toyota,camry,automatic,gas,like new,sedan,ct,8500.0,8276.78
+2018,173000.0,21625.0,2.0,,2.0,subaru,crosstrek,automatic,gas,excellent,wagon,ct,9900.0,9757.89
+2014,124824.0,10402.0,2.0,,2.0,subaru,xv,automatic,gas,excellent,wagon,ct,10900.0,10196.38
+2002,150000.0,6250.0,,,4.0,dodge,neon,automatic,gas,,,ct,3288.0,3700.24
+2002,150000.0,6250.0,,,12.0,dodge,neon,automatic,gas,,,ct,3288.0,3371.29
+2008,134000.0,7444.444444444444,1.8760000000000001,,8.0,mini,cooper,automatic,gas,excellent,hatchback,ct,3500.0,6821.18
+2002,150000.0,6250.0,,,0.0,dodge,neon,automatic,gas,,,ct,3288.0,3701.84
+2010,109000.0,6812.5,3.5,6.0,2.0,nissan,murano,automatic,gas,like new,suv,ct,5985.0,7752.0
+2013,139000.0,10692.307692307691,3.5,6.0,7.0,infiniti,jx35,automatic,gas,good,suv,ct,6885.0,7416.18
+2025,8440.0,1355.6470588235295,6.0,6.0,9.0,ford,transit,automatic,gas,new,van,mn,139500.0,27622.16
+2015,126474.0,11497.636363636364,8.0,8.0,6.0,chevrolet,silverado,automatic,gas,used,truck,ct,15900.0,8477.34
+2015,175019.0,15910.818181818182,2.5,4.0,8.0,subaru,legacy,automatic,gas,like new,sedan,ct,6900.0,7906.12
+2001,121327.0,4853.08,6.0,6.0,11.0,acura,3,automatic,gas,good,sedan,ct,4300.0,4863.33
+2012,170000.0,12142.857142857143,6.0,6.0,7.0,cadillac,cts,automatic,gas,excellent,sedan,ct,7995.0,5871.3
+2019,54917.0,7845.285714285715,6.0,6.0,0.0,dodge,charger,automatic,gas,used,4dr car,ct,10800.0,9683.56
+2011,200000.0,13333.333333333334,8.0,8.0,11.0,chevrolet,express,manual,gas,good,van,ct,3300.0,7867.7
+2016,199000.0,19900.0,4.0,4.0,3.0,ford,fusion,automatic,gas,excellent,sedan,ct,4500.0,7612.84
+2001,79700.0,3188.0,6.0,6.0,4.0,bmw,z3,automatic,gas,excellent,convertible,ct,14000.0,7605.16
+2016,181790.0,18179.0,4.0,6.0,4.0,toyota,4runner,automatic,gas,like new,suv,ct,18900.0,9047.2
+2013,114100.0,8776.923076923076,1.8760000000000001,4.0,10.0,hyundai,elantra,automatic,gas,,4dr car,ct,6800.0,8406.14
+2012,37851.0,2703.6428571428573,1.8760000000000001,4.0,10.0,fiat,500,manual,gas,excellent,hatchback,,7999.0,8570.82
+2016,180000.0,18000.0,6.0,6.0,10.0,dodge,grand,automatic,gas,excellent,minivan,ct,5000.0,9182.78
+2018,19539.0,2442.375,8.0,8.0,8.0,lexus,lc,automatic,gas,excellent,coupe,ct,48955.0,16558.26
+2007,164379.0,8651.526315789473,4.6,8.0,2.0,lexus,ls,automatic,gas,like new,sedan,ct,10900.0,7848.81
+2017,78600.0,8733.333333333334,4.0,4.0,2.0,porsche,macan,automatic,gas,excellent,suv,ct,18300.0,10595.24
+2004,188000.0,8545.454545454546,4.8,8.0,10.0,chevrolet,silverado,automatic,gas,,pickup,nj,3500.0,5621.08
+2002,150000.0,6250.0,,,11.0,dodge,neon,automatic,gas,,,ct,3488.0,3564.07
+2013,89281.0,6867.7692307692305,3.7,6.0,2.0,infiniti,ex37,automatic,gas,excellent,suv,ct,9900.0,9468.14
+2008,242000.0,13444.444444444445,6.0,6.0,9.0,chevrolet,suburban,automatic,gas,good,suv,ct,8500.0,6451.5
+2016,165728.0,16572.8,2.5,4.0,2.0,subaru,outback,automatic,gas,used,wagon,ct,9599.0,9058.86
+2016,90000.0,9000.0,8.0,8.0,2.0,chevrolet,silverado,automatic,gas,like new,pickup,ct,2000.0,2161.0
+2013,148609.0,11431.461538461539,3.5,6.0,16.0,mercedes-benz,e350,automatic,gas,like new,wagon,ct,9900.0,11298.06
+2014,91437.0,7619.75,6.0,6.0,1.0,jeep,cherokee,automatic,gas,excellent,suv,ct,9450.0,7906.04
+2011,96000.0,6400.0,3.0,6.0,9.0,bmw,328i,automatic,gas,good,sedan,ct,7485.0,7107.18
+2005,215000.0,10238.095238095239,8.0,8.0,9.0,chevrolet,avalanche,automatic,gas,good,truck,ct,5800.0,5825.24
+2012,114000.0,8142.857142857143,3.7,6.0,9.0,jeep,liberty,automatic,gas,excellent,suv,ct,6885.0,7741.7
+2009,117810.0,6930.0,4.7,8.0,10.0,jeep,grand,automatic,gas,,suv,ct,6800.0,6390.47
+2015,51345.0,4667.727272727273,3.6,6.0,11.0,chrysler,town,automatic,gas,pre-owned,minivan/van,georgia,28900.0,18985.66
+2014,99800.0,8316.666666666666,2.0,4.0,13.0,mazda,cx-5,automatic,gas,"clean car fax, no accidents",sport utility,ct,12800.0,8907.2
+2002,150000.0,6250.0,,,7.0,dodge,neon,automatic,gas,,,ct,2988.0,3715.93
+2015,179079.0,16279.90909090909,3.6,6.0,13.0,subaru,outback,automatic,gas,like new,wagon,ct,7400.0,9058.76
+2012,151000.0,10785.714285714286,3.0,6.0,3.0,volvo,s80,automatic,gas,excellent,sedan,ct,5485.0,6668.52
+2020,35125.0,5854.166666666667,4.0,4.0,0.0,ford,fusion,automatic,gas,used,4dr car,ct,14850.0,12031.25
+2016,100300.0,10030.0,3.0,6.0,13.0,bmw,535i,automatic,gas,,4dr car,ct,14800.0,12615.14
+2015,154359.0,14032.636363636364,2.0,4.0,13.0,subaru,xv,automatic,gas,used,wagon,ct,9998.0,9881.09
+2007,165000.0,8684.21052631579,6.0,6.0,12.0,saturn,vue,automatic,gas,excellent,suv,ct,6700.0,4470.49
+2013,150000.0,11538.461538461539,6.0,6.0,13.0,subaru,impreza,automatic,gas,,hatchback,ct,3900.0,6628.78
+2016,81652.0,8165.2,4.0,4.0,1.0,chevrolet,trax,automatic,gas,excellent,hatchback,ct,7500.0,7286.18
+2009,127000.0,7470.588235294118,1.8760000000000001,4.0,5.0,toyota,prius,automatic,hybrid,good,hatchback,ct,6485.0,7115.1
+2012,159543.0,11395.92857142857,4.0,4.0,5.0,honda,civic,automatic,gas,excellent,sedan,ct,5995.0,6562.94
+2010,273600.00000000006,17500.0,8.0,8.0,6.0,chevrolet,express,automatic,gas,good,van,ct,4800.0,8229.92
+2013,130000.0,10000.0,4.0,4.0,3.0,hyundai,elantra,automatic,gas,excellent,sedan,ct,4700.0,6461.32
+1991,216000.0,6171.428571428572,4.0,4.0,0.0,saab,900,manual,gas,fair,convertible,ct,900.0,4666.86
+2020,46500.0,7750.0,6.0,6.0,11.0,ram,promaster,automatic,gas,like new,van,ct,26500.0,10048.93
+2016,90000.0,9000.0,8.0,8.0,1.0,chevrolet,silverado,automatic,gas,like new,pickup,ct,2000.0,2219.5
+2011,165000.0,11000.0,4.0,4.0,15.0,chevrolet,malibu,automatic,gas,good,sedan,ct,2999.0,5940.78
+2021,61000.0,12200.0,,,1.0,tesla,model,automatic,electric,like new,wagon,ct,5000.0,6023.18
+2014,113000.0,9416.666666666666,8.0,8.0,15.0,bmw,750li,automatic,gas,good,sedan,ct,6999.0,7173.62
+1987,9000.0,1355.6470588235295,5.0,8.0,6.0,ford,f,manual,gas,good,pickup,ct,7500.0,19612.89
+2023,108905.0,24560.374500000005,1.8760000000000001,4.0,0.0,hyundai,elantra,automatic,gas,used,4dr car,ct,16750.0,14920.4
+2012,95000.0,6785.714285714285,4.0,4.0,12.0,kia,rio,automatic,gas,good,sedan,ct,3995.0,6483.16
+2019,201000.0,24560.374500000005,4.0,4.0,7.0,ram,promaster,automatic,gas,good,van,ct,8500.0,12317.61
+2015,123897.0,11263.363636363636,3.5,6.0,0.0,mercedes-benz,glk-class,automatic,gas,used,suv,ct,8900.0,11028.38
+2017,92000.0,10222.222222222223,3.6,6.0,0.0,jeep,cherokee,automatic,gas,good,suv,ct,11500.0,10827.25
+2017,33587.0,3731.8888888888887,3.0,,1.0,mitsubishi fuso,cab,automatic,diesel,excellent,truck,ct,34500.0,9919.26
+2011,178907.0,11927.133333333333,5.3,8.0,0.0,chevrolet,tahoe,automatic,other,used,suv,ct,8500.0,7718.62
+2015,116669.0,10606.272727272728,2.4,4.0,0.0,kia,optima,automatic,gas,used,sedan,ct,8800.0,7733.86
+1988,69541.0,1830.0263157894738,5.0,8.0,0.0,chevrolet,caprice,automatic,gas,used,wagon,ct,17500.0,10563.81
+2009,114115.0,6712.64705882353,4.0,4.0,1.0,audi,a4,automatic,gas,good,sedan,ct,6000.0,5828.9
+2014,91374.0,7614.5,8.0,8.0,0.0,ford,econoline,automatic,gas,used,van,ct,12300.0,10708.82
+2011,150000.0,10000.0,4.0,4.0,7.0,subaru,outback,automatic,gas,excellent,suv,ct,6000.0,6762.65
+2016,142654.0,14265.4,8.0,8.0,2.0,ram,3500,automatic,gas,used,regular cab chassis-cab,ct,29900.0,8620.96
+2014,130000.0,10833.333333333334,2.0,4.0,9.0,cadillac,ats-4,automatic,gas,excellent,sedan,ct,6485.0,8227.16
+2019,42250.0,6035.714285714285,,,10.0,audi,a6,automatic,gas,excellent,sedan,ct,17000.0,10125.33
+2009,140000.0,8235.29411764706,,,10.0,chevrolet,cobalt,automatic,gas,,,ct,3000.0,4048.65
+2012,267000.0,19071.428571428572,,,11.0,nissan,altima,automatic,gas,,,ct,1000.0,6531.18
+2023,22500.0,7500.0,2.0,,11.0,volkswagen,tiguan,automatic,gas,excellent,suv,ct,20000.0,19267.42
+2013,103000.0,7923.076923076923,6.0,6.0,11.0,nissan,altima,automatic,gas,,sedan,ct,9500.0,6121.65
+2013,79000.0,6076.923076923077,6.0,6.0,12.0,lexus,es350,automatic,gas,excellent,sedan,ct,14950.0,9256.86
+2016,114000.0,11400.0,3.5,6.0,12.0,nissan,pathfinder,automatic,gas,excellent,suv,ct,9885.0,8402.95
+2014,117455.0,9787.916666666666,6.0,6.0,13.0,nissan,maxima,automatic,gas,,sedan,ct,6488.0,6748.02
+2014,129400.0,10783.333333333334,2.0,4.0,13.0,audi,q5,automatic,other,,suv,ct,9800.0,9589.72
+2005,104000.0,4952.380952380952,,,14.0,buick,park,automatic,gas,,sedan,ct,2800.0,6854.92
+2023,113437.0,24560.374500000005,2.5,4.0,14.0,subaru,forester,automatic,gas,like new,suv,ct,19900.0,18402.5
+2015,129000.0,11727.272727272728,4.0,4.0,15.0,jeep,compass,automatic,gas,excellent,suv,ct,5500.0,9406.0
+2010,80000.0,5000.0,6.0,6.0,16.0,honda,accord,automatic,gas,good,sedan,ct,25000.0,5156.22
+2014,142168.0,11847.333333333334,8.0,8.0,17.0,chevrolet,silverado,automatic,gas,used,truck,ct,14600.0,8216.96
+2013,85000.0,6538.461538461538,4.0,4.0,8.0,chevrolet,cruze,automatic,gas,good,sedan,ct,5495.0,6767.68
+2020,38563.0,6427.166666666667,4.0,4.0,2.0,mazda,3,automatic,gas,excellent,sedan,ct,17200.0,9446.8
+2002,150000.0,6250.0,,,8.0,dodge,neon,automatic,gas,,,ct,3288.0,3720.87
+2018,170000.0,21250.0,4.0,4.0,7.0,kia,soul,automatic,gas,excellent,,ct,4200.0,5411.64
+2016,88133.0,8813.3,4.0,4.0,2.0,ford,fiesta,automatic,gas,excellent,sedan,ct,5900.0,6454.9
+2012,130790.0,9342.142857142857,8.0,8.0,2.0,chevrolet,silverado,automatic,gas,used,truck,ct,14950.0,6609.17
+2008,166000.0,9222.222222222223,4.0,4.0,2.0,honda,crv,automatic,gas,good,suv,ct,5900.0,4867.51
+2008,158000.0,8777.777777777777,,,3.0,volkswagen,passat,manual,gas,,sedan,ct,2000.0,5596.8
+2017,124781.0,13864.555555555555,2.5,4.0,3.0,subaru,legacy,automatic,gas,used,sedan,ct,10998.0,8779.22
+2002,150000.0,6250.0,,,3.0,dodge,neon,automatic,gas,,,ct,2988.0,3700.24
+2016,126000.0,12600.0,2.5,5.0,4.0,volvo,xc60,automatic,gas,excellent,suv,ct,8885.0,9254.86
+2012,160000.0,11428.57142857143,4.0,4.0,4.0,chevrolet,equinox,automatic,gas,like new,suv,ct,5000.0,6962.89
+2002,200000.0,8333.333333333334,8.0,8.0,6.0,mercedes-benz,s430,automatic,gas,good,sedan,ct,2500.0,7516.36
+2002,150000.0,6250.0,,,5.0,dodge,neon,automatic,gas,,,ct,3288.0,3668.68
+2016,147973.0,14797.3,2.0,4.0,6.0,subaru,crosstrek,manual,gas,used,wagon,ct,9998.0,9643.42
+1997,130000.0,4482.758620689655,8.0,8.0,6.0,chevrolet,camaro,automatic,gas,good,coupe,ct,15900.0,12331.69
+2013,220000.0,16923.076923076922,4.0,4.0,6.0,hyundai,sonata,automatic,gas,good,sedan,ct,3700.0,5400.46
+2018,175000.0,21875.0,4.0,4.0,0.0,subaru,legacy,automatic,gas,excellent,sedan,ct,7200.0,7790.7
+2002,131000.0,5458.333333333333,4.0,6.0,6.0,ford,ranger,automatic,gas,like new,truck,ct,10299.0,7178.44
+1990,252300.0,7008.333333333333,4.0,4.0,8.0,volvo,240,automatic,gas,fair,sedan,ct,1200.0,4856.19
+2009,149974.0,8822.0,4.0,4.0,0.0,honda,civic,automatic,gas,good,,ct,6995.0,5439.68

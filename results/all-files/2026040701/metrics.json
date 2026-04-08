@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "today_local": "2026-04-06",
+  "train_rows": 341,
+  "holdout_rows": 281,
+  "mae_today": 3581.2291898065037,
+  "best_params": {
+    "model__max_depth": null,
+    "model__max_features": "sqrt",
+    "model__min_samples_leaf": 1,
+    "model__min_samples_split": 2,
+    "model__n_estimators": 300
+  },
+  "best_cv_mae": 4053.075513246966,
+  "top_pdp_features": [
+    "year_num",
+    "mileage_num",
+    "mileage_per_year"
+  ],
+  "pdp_files": [
+    "structured/preds-llm/2026040701/pdp_year_num.png",
+    "structured/preds-llm/2026040701/pdp_mileage_num.png",
+    "structured/preds-llm/2026040701/pdp_mileage_per_year.png"
+  ],
+  "feature_count": 8,
+  "numeric_feature_count": 6,
+  "categorical_feature_count": 2,
+  "target_train_cap": {
+    "low": 1500.0,
+    "high": 56300.000000000015
+  },
+  "feature_caps": {
+    "mileage_num": {
+      "low": 8440.0,
+      "high": 273600.00000000006
+    },
+    "mileage_per_year": {
+      "low": 1355.6470588235295,
+      "high": 24560.374500000005
+    },
+    "engine_liters": {
+      "low": NaN,
+      "high": NaN
+    },
+    "engine_cylinders": {
+      "low": NaN,
+      "high": NaN
+    },
+    "days_since_posted": {
+      "low": NaN,
+      "high": NaN
+    }
+  }
+}

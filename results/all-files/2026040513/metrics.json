@@ -1,0 +1,58 @@
+{
+  "status": "ok",
+  "today_local": "2026-04-05",
+  "train_rows": 359,
+  "holdout_rows": 223,
+  "mae_today": 3291.0984237201737,
+  "best_params": {
+    "model__max_depth": null,
+    "model__max_features": "sqrt",
+    "model__min_samples_leaf": 1,
+    "model__min_samples_split": 2,
+    "model__n_estimators": 200
+  },
+  "best_cv_mae": 4182.484605130785,
+  "top_pdp_features": [
+    "year_num",
+    "vehicle_age",
+    "mileage_num"
+  ],
+  "pdp_files": [
+    "structured/preds-llm/2026040513/pdp_year_num.png",
+    "structured/preds-llm/2026040513/pdp_vehicle_age.png",
+    "structured/preds-llm/2026040513/pdp_mileage_num.png"
+  ],
+  "feature_count": 9,
+  "numeric_feature_count": 7,
+  "categorical_feature_count": 2,
+  "target_train_cap": {
+    "low": 1500.0,
+    "high": 57550.00000000004
+  },
+  "feature_caps": {
+    "mileage_num": {
+      "low": 6913.06,
+      "high": 285500.0000000004
+    },
+    "vehicle_age": {
+      "low": 2.58,
+      "high": 39.420000000000016
+    },
+    "mileage_per_year": {
+      "low": 1426.5882352941178,
+      "high": 26794.76699999998
+    },
+    "engine_liters": {
+      "low": NaN,
+      "high": NaN
+    },
+    "engine_cylinders": {
+      "low": NaN,
+      "high": NaN
+    },
+    "days_since_posted": {
+      "low": NaN,
+      "high": NaN
+    }
+  }
+}
