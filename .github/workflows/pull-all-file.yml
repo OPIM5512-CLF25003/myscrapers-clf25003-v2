@@ -1,6 +1,5 @@
-name: Sync All GCS Results to GitHub
-
-run-name: Syncing all result files for ${{ github.ref_name }} by @${{ github.actor }}
+name: Pull All Files to results/all-files
+run-name: Pulling all files for ${{ github.ref_name }} by @${{ github.actor }}
 
 on:
   schedule:
@@ -14,53 +13,71 @@ permissions:
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   BUCKET_NAME: ${{ vars.BUCKET_NAME }}
+  WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+  DEPLOYER_SA: ${{ vars.DEPLOYER_SA }}
+  GCS_SOURCE_PREFIX: "structured/preds-llm"
+  OUTPUT_DIR: "results/all-files"
 
 jobs:
-  sync-results:
+  pull_all_files:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Authenticate to Google Cloud
+      - name: Auth (WIF) and Setup gcloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
 
-      - name: Sync all files from GCS to results/all-files
+      - name: Pull all run folders from GCS with same file names
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
 
-          GCS_PREFIX="gs://${BUCKET_NAME}/results"
-          LOCAL_DIR="results/all-files"
+          mkdir -p "${{ env.OUTPUT_DIR }}"
 
-          echo "Creating local directory: ${LOCAL_DIR}"
-          mkdir -p "${LOCAL_DIR}"
+          echo "Looking for run folders under gs://${BUCKET_NAME}/${GCS_SOURCE_PREFIX}/"
+          RUN_DIRS=$(gsutil ls -d "gs://${BUCKET_NAME}/${GCS_SOURCE_PREFIX}/*/" || true)
 
-          echo "Listing files in ${GCS_PREFIX}:"
-          gsutil ls -r "${GCS_PREFIX}/**" || true
-
-          echo "Copying all files recursively from ${GCS_PREFIX} to ${LOCAL_DIR}"
-          gsutil -m rsync -r "${GCS_PREFIX}" "${LOCAL_DIR}"
-
-          echo "Files copied to ${LOCAL_DIR}:"
-          find "${LOCAL_DIR}" -type f | sort || true
-
-      - name: Commit and push files
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add results/all-files/
-
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Sync all GCS files to results/all-files"
-            git push
+          if [ -z "$RUN_DIRS" ]; then
+            echo "No run folders found."
+            exit 0
           fi
+
+          while IFS= read -r RUN_DIR; do
+            [ -z "$RUN_DIR" ] && continue
+
+            RUN_ID=$(basename "$RUN_DIR")
+            RUN_ID="${RUN_ID%/}"
+
+            LOCAL_RUN_DIR="${{ env.OUTPUT_DIR }}/${RUN_ID}"
+            mkdir -p "$LOCAL_RUN_DIR"
+
+            echo "Copying all files from $RUN_DIR to $LOCAL_RUN_DIR"
+            gsutil -m cp "${RUN_DIR}*" "$LOCAL_RUN_DIR/" || true
+          done <<< "$RUN_DIRS"
+
+          echo "Final files in ${{ env.OUTPUT_DIR }}:"
+          find "${{ env.OUTPUT_DIR }}" -type f | sort || true
+
+      - name: Commit and Push All Files
+        if: success()
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          git add "${{ env.OUTPUT_DIR }}"
+
+          git commit -m "🤖 Sync all run files from GCS to results/all-files" || echo "No changes to commit"
+
+          git pull --rebase origin main
+          git push
