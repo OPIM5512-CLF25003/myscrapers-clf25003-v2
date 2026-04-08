@@ -1,0 +1,81 @@
+name: Data Sync Hourly Permutation Importance to Repo
+run-name: Syncing hourly permutation importance for ${{ github.ref_name }} by @${{ github.actor }}
+
+on:
+  schedule:
+    - cron: '45 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  BUCKET_NAME: ${{ vars.BUCKET_NAME }}
+  WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+  DEPLOYER_SA: ${{ vars.DEPLOYER_SA }}
+  GCS_PREDS_PREFIX: "structured/preds-llm"
+  OUTPUT_DIR: "results/permutation_importance"
+
+jobs:
+  sync_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auth (WIF) and Setup gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Find Latest Run ID, Download, and Rename File
+        id: download_perm
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # find latest folder in structured/preds-llm
+          LATEST_RUN_DIR=$(gsutil ls -d gs://${BUCKET_NAME}/${GCS_PREDS_PREFIX}/*/ | tail -1)
+
+          # extract folder name like 2026040819
+          LATEST_RUN_ID=$(echo "$LATEST_RUN_DIR" | sed -E "s|gs://${BUCKET_NAME}/${GCS_PREDS_PREFIX}/||; s|/||")
+
+          # define file names
+          LOCAL_FILENAME="$LATEST_RUN_ID-permutation_importance.csv"
+          GCS_SOURCE_FILE="${{ env.GCS_PREDS_PREFIX }}/$LATEST_RUN_ID/permutation_importance.csv"
+          LOCAL_TARGET_FILE="${{ env.OUTPUT_DIR }}/$LOCAL_FILENAME"
+
+          echo "run_id=$LATEST_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "filename=$LOCAL_FILENAME" >> "$GITHUB_OUTPUT"
+
+          echo "Detected latest run ID: $LATEST_RUN_ID"
+
+          mkdir -p "${{ env.OUTPUT_DIR }}"
+          gsutil cp "gs://${BUCKET_NAME}/${GCS_SOURCE_FILE}" "${LOCAL_TARGET_FILE}"
+
+          echo "Successfully copied: gs://${BUCKET_NAME}/${GCS_SOURCE_FILE} to ${LOCAL_TARGET_FILE}"
+
+      - name: Commit and Push New Timestamped File
+        if: success()
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          FILENAME="${{ steps.download_perm.outputs.filename }}"
+          RUN_ID="${{ steps.download_perm.outputs.run_id }}"
+
+          git add "${{ env.OUTPUT_DIR }}/$FILENAME"
+
+          git commit -m "🤖 Data Sync: Add permutation importance file for run $RUN_ID" || echo "No changes to commit"
+
+          git pull --rebase origin main
+          git push
