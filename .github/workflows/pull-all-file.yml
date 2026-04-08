@@ -4,7 +4,7 @@ run-name: Syncing all result files for ${{ github.ref_name }} by @${{ github.act
 
 on:
   schedule:
-    - cron: '45 * * * *'   # runs every hour at minute 45
+    - cron: '45 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,41 +20,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Authenticate with Google Cloud
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.SERVICE_ACCOUNT }}
 
-      # 3. Setup gcloud CLI
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # 4. Sync ALL files from GCS → results/all-files
       - name: Sync all files from GCS to results/all-files
         run: |
           set -e
 
-          GCS_PREFIX="gs://${BUCKET_NAME}/results/"
+          GCS_PREFIX="gs://${BUCKET_NAME}/results"
           LOCAL_DIR="results/all-files"
 
           echo "Creating local directory: ${LOCAL_DIR}"
           mkdir -p "${LOCAL_DIR}"
 
-          echo "Copying ALL files from ${GCS_PREFIX} to ${LOCAL_DIR}"
+          echo "Listing files in ${GCS_PREFIX}:"
+          gsutil ls -r "${GCS_PREFIX}/**" || true
 
-          # Copy everything recursively (including subfolders)
-          gsutil -m cp -r "${GCS_PREFIX}**" "${LOCAL_DIR}/" || true
+          echo "Copying all files recursively from ${GCS_PREFIX} to ${LOCAL_DIR}"
+          gsutil -m rsync -r "${GCS_PREFIX}" "${LOCAL_DIR}"
 
-          echo "Files copied:"
+          echo "Files copied to ${LOCAL_DIR}:"
           find "${LOCAL_DIR}" -type f | sort || true
 
-      # 5. Commit and push to GitHub
       - name: Commit and push files
         run: |
           git config user.name "github-actions[bot]"
