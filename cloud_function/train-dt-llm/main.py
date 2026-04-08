@@ -35,6 +35,29 @@ logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(message
 
 
 # =========================================================
+# FEATURE NAME MAP (short -> full)
+# =========================================================
+feature_name_map = {
+    "yr": "year",
+    "mi": "mileage",
+    "mi_py": "mileage_per_year",
+    "mk": "make",
+    "mdl": "model",
+    "trn": "transmission",
+    "ful": "fuel",
+    "cnd": "condition",
+    "bdy": "body_type",
+    "st": "state",
+    "eng_l": "engine_liters",
+    "eng_c": "engine_cylinders",
+    "days_post": "days_since_posted",
+    "eng_l_miss": "engine_liters_missing",
+    "eng_c_miss": "engine_cylinders_missing",
+    "days_post_miss": "days_since_posted_missing"
+}
+
+
+# =========================================================
 # GCS HELPERS
 # =========================================================
 def _read_csv_from_gcs(client: storage.Client, bucket: str, key: str) -> pd.DataFrame:
@@ -189,19 +212,16 @@ def _ensure_cols(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
 def _prepare_base_types(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    # datetime columns
     if "scraped_at" in df.columns:
         df["scraped_at"] = pd.to_datetime(df["scraped_at"], errors="coerce", utc=True)
 
     if "posted_date" in df.columns:
         df["posted_date"] = pd.to_datetime(df["posted_date"], errors="coerce")
 
-    # numeric-like raw columns
     for c in ["price", "year", "mileage", "mpg_city", "mpg_highway", "location_zip"]:
         if c in df.columns:
             df[c] = _clean_numeric(df[c])
 
-    # text columns
     text_cols = [
         "make", "model", "series", "transmission", "fuel", "body_type",
         "color", "title_status", "condition", "drivetrain", "engine",
@@ -221,7 +241,6 @@ def _prepare_base_types(df: pd.DataFrame) -> pd.DataFrame:
 def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     df = df.copy()
 
-    # local time / date
     df["scraped_at_local"] = df["scraped_at"]
     try:
         df["scraped_at_local"] = df["scraped_at"].dt.tz_convert(timezone)
@@ -230,7 +249,6 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
 
     df["date_local"] = df["scraped_at_local"].dt.date
 
-    # clean raw source columns first
     if "make" in df.columns:
         df["make"] = _std_make(df["make"])
     if "model" in df.columns:
@@ -248,7 +266,7 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     if "engine" in df.columns:
         df["engine"] = _norm_text(df["engine"])
 
-    # short engineered names
+    # short, easy feature names
     df["p"] = df["price"] if "price" in df.columns else np.nan
     df["yr"] = df["year"] if "year" in df.columns else np.nan
     df["mi"] = df["mileage"] if "mileage" in df.columns else np.nan
@@ -264,7 +282,6 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     df["eng_l"] = _eng_l(df["engine"]) if "engine" in df.columns else np.nan
     df["eng_c"] = _eng_cyl(df["engine"]) if "engine" in df.columns else np.nan
 
-    # recency
     if "posted_date" in df.columns:
         scraped_naive = df["scraped_at_local"].dt.tz_localize(None, ambiguous="NaT", nonexistent="NaT")
         df["days_post"] = (scraped_naive - df["posted_date"]).dt.days
@@ -272,13 +289,12 @@ def _feature_engineering(df: pd.DataFrame, timezone: str) -> pd.DataFrame:
     else:
         df["days_post"] = np.nan
 
-    # usage intensity
     current_year = pd.Timestamp.now(tz=timezone).year if timezone else pd.Timestamp.now().year
     vehicle_age_tmp = current_year - df["yr"]
     vehicle_age_tmp = vehicle_age_tmp.where(vehicle_age_tmp > 0, np.nan)
     df["mi_py"] = df["mi"] / vehicle_age_tmp
 
-    # missingness flags
+    # missing flags
     df["eng_l_miss"] = df["eng_l"].isna().astype(int)
     df["eng_c_miss"] = df["eng_c"].isna().astype(int)
     df["days_post_miss"] = df["days_post"].isna().astype(int)
@@ -298,13 +314,13 @@ def run_once(dry_run: bool = False):
     if missing:
         raise ValueError(f"Missing required columns: {sorted(missing)}")
 
-    # 1) datatype checks + conversion
+    # 1. datatype check + conversion
     df = _prepare_base_types(df)
 
-    # 2) feature engineering with short/easy names
+    # 2. feature engineering
     df = _feature_engineering(df, TIMEZONE)
 
-    # 3) split by today vs past
+    # 3. split past vs today
     unique_dates = sorted(d for d in df["date_local"].dropna().unique())
     if len(unique_dates) < 2:
         return {
@@ -317,11 +333,11 @@ def run_once(dry_run: bool = False):
     train_df = df[df["date_local"] < today_local].copy()
     holdout_df = df[df["date_local"] == today_local].copy()
 
-    # 4) keep only rows with target
+    # 4. keep rows with target
     train_df = train_df[train_df["p"].notna()].copy()
     holdout_df = holdout_df[holdout_df["p"].notna()].copy()
 
-    # 5) sanity filters
+    # 5. sanity filters
     train_df = train_df[(train_df["p"] >= 500) & (train_df["yr"] >= 1980)].copy()
     holdout_df = holdout_df[(holdout_df["p"] >= 500) & (holdout_df["yr"] >= 1980)].copy()
 
@@ -335,7 +351,7 @@ def run_once(dry_run: bool = False):
     train_df = train_df.sort_values("scraped_at_local").reset_index(drop=True)
     holdout_df = holdout_df.sort_values("scraped_at_local").reset_index(drop=True)
 
-    # 6) outlier handling
+    # 6. outlier handling
     train_df["p"], p_lo, p_hi = _cap_series(train_df["p"], train_df["p"], 0.01, 0.99)
 
     outlier_cols = ["mi", "mi_py", "eng_l", "eng_c", "days_post"]
@@ -349,7 +365,7 @@ def run_once(dry_run: bool = False):
 
     target = "p"
 
-    # 7) final model columns
+    # 7. final model columns
     num_feats = [
         "yr",
         "mi",
@@ -385,7 +401,7 @@ def run_once(dry_run: bool = False):
     X_holdout = holdout_df[feats].copy() if len(holdout_df) > 0 else pd.DataFrame(columns=feats)
     y_holdout = holdout_df[target].copy() if len(holdout_df) > 0 else pd.Series(dtype=float)
 
-    # 8) missing value handling inside pipeline
+    # 8. missing value handling
     pre = ColumnTransformer(
         transformers=[
             (
@@ -414,7 +430,7 @@ def run_once(dry_run: bool = False):
         ("model", model)
     ])
 
-    # 9) hyperparameter tuning
+    # 9. hyperparameter tuning
     param_grid = {
         "model__n_estimators": [200, 400],
         "model__max_depth": [10, 20, None],
@@ -441,14 +457,13 @@ def run_once(dry_run: bool = False):
     now_utc = pd.Timestamp.now(tz="UTC")
     base_out = f"{OUTPUT_PREFIX}/{now_utc.strftime('%Y%m%d%H')}"
 
-    # 10) predict only today’s listings
+    # 10. predict only today's listings
     mae_today = None
     preds_df = pd.DataFrame()
 
     if len(X_holdout) > 0:
         y_hat = best_pipe.predict(X_holdout)
 
-        # output only identifiers + final model columns + actual/pred
         output_cols = [
             "post_id",
             "scraped_at",
@@ -478,7 +493,7 @@ def run_once(dry_run: bool = False):
 
         mae_today = float(mean_absolute_error(y_holdout, y_hat))
 
-    # 11) permutation importance
+    # 11. permutation importance
     perm_X = X_holdout if len(X_holdout) > 0 else X_train
     perm_y = y_holdout if len(X_holdout) > 0 else y_train
 
@@ -492,14 +507,17 @@ def run_once(dry_run: bool = False):
         n_jobs=-1
     )
 
-    importance_df = pd.DataFrame({
+    importance_short_df = pd.DataFrame({
         "feature": feats,
         "importance_mean": perm.importances_mean,
         "importance_std": perm.importances_std
     }).sort_values("importance_mean", ascending=False)
 
-    # 12) PDP for top 3 numeric features
-    top_num = [f for f in importance_df["feature"].tolist() if f in num_feats][:3]
+    importance_df = importance_short_df.copy()
+    importance_df["feature"] = importance_df["feature"].map(lambda x: feature_name_map.get(x, x))
+
+    # 12. PDP for top 3 numeric features
+    top_num = [f for f in importance_short_df["feature"].tolist() if f in num_feats][:3]
     pdp_files = []
 
     for f in top_num:
@@ -516,7 +534,8 @@ def run_once(dry_run: bool = False):
         fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
         plt.close(fig)
 
-        pdp_key = f"{base_out}/pdp_{f}.png"
+        readable_name = feature_name_map.get(f, f)
+        pdp_key = f"{base_out}/pdp_{readable_name}.png"
         _write_bytes_to_gcs(client, GCS_BUCKET, pdp_key, buf.getvalue(), "image/png")
         pdp_files.append(pdp_key)
 
@@ -528,8 +547,10 @@ def run_once(dry_run: bool = False):
         "mae_today": mae_today,
         "best_params": grid.best_params_,
         "best_cv_mae": float(-grid.best_score_),
-        "features_used": feats,
-        "top_pdp_features": top_num,
+        "features_used_short": feats,
+        "features_used_full": [feature_name_map.get(f, f) for f in feats],
+        "top_pdp_features_short": top_num,
+        "top_pdp_features_full": [feature_name_map.get(f, f) for f in top_num],
         "pdp_files": pdp_files,
         "feature_count": len(feats),
         "numeric_feature_count": len(num_feats),
@@ -553,7 +574,7 @@ def run_once(dry_run: bool = False):
         "mae_today": mae_today,
         "best_params": grid.best_params_,
         "best_cv_mae": float(-grid.best_score_),
-        "top_3_numeric_pdp_features": top_num,
+        "top_3_numeric_pdp_features": [feature_name_map.get(f, f) for f in top_num],
         "dry_run": dry_run
     }
 
