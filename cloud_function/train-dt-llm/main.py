@@ -17,7 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance, PartialDependenceDisplay
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
 
 
@@ -459,6 +459,9 @@ def run_once(dry_run: bool = False):
 
     # 10. predict only today's listings
     mae_today = None
+    rmse_today = None
+    mape_today = None
+    bias_today = None
     preds_df = pd.DataFrame()
 
     if len(X_holdout) > 0:
@@ -492,6 +495,15 @@ def run_once(dry_run: bool = False):
         preds_df["pred_price"] = np.round(y_hat, 2)
 
         mae_today = float(mean_absolute_error(y_holdout, y_hat))
+        rmse_today = float(np.sqrt(mean_squared_error(y_holdout, y_hat)))
+
+        mask = y_holdout != 0
+        if mask.sum() > 0:
+            mape_today = float(np.mean(np.abs((y_holdout[mask] - y_hat[mask]) / y_holdout[mask])) * 100)
+        else:
+            mape_today = None
+
+        bias_today = float(np.mean(y_hat - y_holdout))
 
     # 11. permutation importance
     perm_X = X_holdout if len(X_holdout) > 0 else X_train
@@ -545,6 +557,9 @@ def run_once(dry_run: bool = False):
         "train_rows": int(len(train_df)),
         "holdout_rows": int(len(holdout_df)),
         "mae_today": mae_today,
+        "rmse_today": rmse_today,
+        "mape_today": mape_today,
+        "bias_today": bias_today,
         "best_params": grid.best_params_,
         "best_cv_mae": float(-grid.best_score_),
         "features_used_short": feats,
@@ -572,6 +587,9 @@ def run_once(dry_run: bool = False):
         "train_rows": int(len(train_df)),
         "holdout_rows": int(len(holdout_df)),
         "mae_today": mae_today,
+        "rmse_today": rmse_today,
+        "mape_today": mape_today,
+        "bias_today": bias_today,
         "best_params": grid.best_params_,
         "best_cv_mae": float(-grid.best_score_),
         "top_3_numeric_pdp_features": [feature_name_map.get(f, f) for f in top_num],
