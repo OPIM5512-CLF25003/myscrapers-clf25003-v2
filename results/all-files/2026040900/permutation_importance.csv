@@ -1,0 +1,17 @@
+feature,importance_mean,importance_std
+year,1517.774378912763,138.240414532408
+mileage,1163.7830864683042,77.03252388475094
+make,642.2936346465917,62.03770464404091
+model,641.2541607773421,55.53744013011702
+mileage_per_year,378.8289023147974,25.85675499310467
+days_since_posted,0.0,0.0
+engine_cylinders,0.0,0.0
+engine_liters,0.0,0.0
+engine_cylinders_missing,0.0,0.0
+engine_liters_missing,0.0,0.0
+days_since_posted_missing,0.0,0.0
+transmission,0.0,0.0
+fuel,0.0,0.0
+condition,0.0,0.0
+body_type,0.0,0.0
+state,0.0,0.0
