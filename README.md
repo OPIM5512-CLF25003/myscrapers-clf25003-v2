@@ -14,6 +14,7 @@ Trains a machine learning model using historical data
 Predicts prices for new listings (daily/hourly)
 Tracks performance metrics over time
 Syncs outputs to GitHub using GitHub Actions
+
 ⚙️ Pipeline Architecture
 
 Data Flow:
@@ -34,6 +35,8 @@ preds-llm.csv → Model predictions
 metrics.json → Model performance metrics
 permutation_importance.csv → Feature importance
 pdp_*.png → Partial Dependence Plots
+
+
 📈 Model Evaluation Metrics
 
 The pipeline tracks:
@@ -45,6 +48,7 @@ Bias
 
 These metrics are analyzed over time to evaluate model performance and stability.
 
+
 🔍 Key Features
 LLM-enhanced feature extraction (color, city, state, etc.)
 Time-based train/holdout split (predicting today's listings)
@@ -52,6 +56,8 @@ Hyperparameter tuning using GridSearchCV
 Permutation feature importance tracking
 Partial Dependence Plot (PDP) generation
 Automated pipeline using GitHub Actions + GCP
+
+
 🧩 Feature Engineering
 
 To improve model performance, several engineered features were created from raw Craigslist data:
@@ -63,12 +69,16 @@ Days Since Posted → Captures listing freshness
 Missing Value Indicators → Flags for missing data
 Normalized Features → Cleaned make, model, fuel, transmission, etc.
 LLM-Extracted Features → Additional fields like color, city, and state
+
+
 🎯 Impact of Feature Engineering
 Features like vehicle age and mileage per year significantly improved model performance
 LLM-based extraction added meaningful structured data from raw text
 Data cleaning and normalization reduced noise and improved stability
 Feature importance analysis showed engineered features consistently ranked among the top predictors
 Overall, feature engineering made the model more accurate, stable, and interpretable
+
+
 📊 Notebook Analysis
 
 A Jupyter/Colab notebook is included to analyze:
@@ -77,26 +87,36 @@ Model performance trends over time
 Feature importance stability
 Partial dependence plots (model behavior)
 Dataset growth and impact on predictions
+
+
 🧠 Key Insights
 Core features like year, mileage, and mileage per year consistently drive predictions
 Model performance remains stable as more data is collected
 PDPs confirm real-world pricing relationships
 Hyperparameters converge, indicating a stable model
+
+
 ⚠️ Limitations
 Some metrics (RMSE, MAPE, Bias) were introduced later, limiting long-term trends
 Certain features show variability depending on incoming data
 Model may slightly underpredict higher-value vehicles
+
+
 🚀 Future Improvements
 Add text-based features (description embeddings)
 Improve outlier handling
 Experiment with advanced models (XGBoost, LightGBM)
 Continue collecting more data for stronger trends
+
+
 🛠️ Tech Stack
 Python (Pandas, NumPy, Scikit-learn)
 Google Cloud Platform (Cloud Functions, GCS)
 GitHub Actions (automation)
 Matplotlib (visualization)
 LLM (Gemini) for feature extraction
+
+
 👤 Author
 
 Sachin Chahal
