@@ -82,6 +82,7 @@ Matplotlib (visualization)
 LLM (Gemini) for feature extraction
 
 👤 Author
+
 Sachin Chahal
 MS Business Analytics & Project Management
 University of Connecticut
