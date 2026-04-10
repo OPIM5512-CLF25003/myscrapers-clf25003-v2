@@ -52,6 +52,23 @@ Hyperparameter tuning using GridSearchCV
 Permutation feature importance tracking
 Partial Dependence Plot (PDP) generation
 Automated pipeline using GitHub Actions + GCP
+🧩 Feature Engineering
+
+To improve model performance, several engineered features were created from raw Craigslist data:
+
+Vehicle Age → Derived from year, captures depreciation
+Mileage per Year (mileage_per_year) → Measures usage intensity
+Engine Features → Extracted engine liters and cylinders from text
+Days Since Posted → Captures listing freshness
+Missing Value Indicators → Flags for missing data
+Normalized Features → Cleaned make, model, fuel, transmission, etc.
+LLM-Extracted Features → Additional fields like color, city, and state
+🎯 Impact of Feature Engineering
+Features like vehicle age and mileage per year significantly improved model performance
+LLM-based extraction added meaningful structured data from raw text
+Data cleaning and normalization reduced noise and improved stability
+Feature importance analysis showed engineered features consistently ranked among the top predictors
+Overall, feature engineering made the model more accurate, stable, and interpretable
 📊 Notebook Analysis
 
 A Jupyter/Colab notebook is included to analyze:
@@ -73,14 +90,13 @@ Model may slightly underpredict higher-value vehicles
 Add text-based features (description embeddings)
 Improve outlier handling
 Experiment with advanced models (XGBoost, LightGBM)
-Continue collecting data for stronger trends
+Continue collecting more data for stronger trends
 🛠️ Tech Stack
 Python (Pandas, NumPy, Scikit-learn)
 Google Cloud Platform (Cloud Functions, GCS)
 GitHub Actions (automation)
 Matplotlib (visualization)
 LLM (Gemini) for feature extraction
-
 👤 Author
 
 Sachin Chahal
