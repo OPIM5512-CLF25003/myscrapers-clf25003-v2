@@ -50,11 +50,17 @@ These metrics are analyzed over time to evaluate model performance and stability
 
 
 🔍 Key Features
+
 LLM-enhanced feature extraction (color, city, state, etc.)
+
 Time-based train/holdout split (predicting today's listings)
+
 Hyperparameter tuning using GridSearchCV
+
 Permutation feature importance tracking
+
 Partial Dependence Plot (PDP) generation
+
 Automated pipeline using GitHub Actions + GCP
 
 
