@@ -1,0 +1,98 @@
+{
+  "status": "ok",
+  "today_local": "2026-04-10",
+  "train_rows": 422,
+  "holdout_rows": 283,
+  "mae_today": 3057.655292641203,
+  "rmse_today": 8157.201447132265,
+  "mape_today": 41.15573177440307,
+  "bias_today": -749.5438607044703,
+  "best_params": {
+    "model__max_depth": null,
+    "model__max_features": 0.7,
+    "model__min_samples_leaf": 1,
+    "model__min_samples_split": 2,
+    "model__n_estimators": 400
+  },
+  "best_cv_mae": 4327.596013813196,
+  "features_used_short": [
+    "yr",
+    "mi",
+    "mi_py",
+    "eng_l",
+    "eng_c",
+    "days_post",
+    "eng_l_miss",
+    "eng_c_miss",
+    "days_post_miss",
+    "mk",
+    "mdl",
+    "trn",
+    "ful",
+    "cnd",
+    "bdy",
+    "st"
+  ],
+  "features_used_full": [
+    "year",
+    "mileage",
+    "mileage_per_year",
+    "engine_liters",
+    "engine_cylinders",
+    "days_since_posted",
+    "engine_liters_missing",
+    "engine_cylinders_missing",
+    "days_since_posted_missing",
+    "make",
+    "model",
+    "transmission",
+    "fuel",
+    "condition",
+    "body_type",
+    "state"
+  ],
+  "top_pdp_features_short": [
+    "yr",
+    "mi",
+    "mi_py"
+  ],
+  "top_pdp_features_full": [
+    "year",
+    "mileage",
+    "mileage_per_year"
+  ],
+  "pdp_files": [
+    "structured/preds-llm/2026041115/pdp_year.png",
+    "structured/preds-llm/2026041115/pdp_mileage.png",
+    "structured/preds-llm/2026041115/pdp_mileage_per_year.png"
+  ],
+  "feature_count": 16,
+  "numeric_feature_count": 9,
+  "categorical_feature_count": 7,
+  "target_train_cap": {
+    "low": 1510.5,
+    "high": 56395.00000000001
+  },
+  "feature_caps": {
+    "mi": {
+      "low": 11524.0,
+      "high": 294750.0000000005
+    },
+    "mi_py": {
+      "low": 1250.1793400286945,
+      "high": 29524.185750000015
+    },
+    "eng_l": {
+      "low": 1.6920000000000002,
+      "high": 8.0
+    },
+    "eng_c": {
+      "low": 4.0,
+      "high": 8.0
+    },
+    "days_post": {
+      "low": 0.0,
+      "high": 18.0
+    }
+  }
+}
